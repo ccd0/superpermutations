@@ -132,14 +132,6 @@ Proof.
   + destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
 Qed.
 
-Lemma collect_bound :
-  forall (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)),
-    length (collect f Ps) <= length Ps.
-Proof.
-  intros.
-  apply select_length.
-Qed.
-
 Lemma dscore0_correct :
   forall Ps : list (list nat), collect dscore0 Ps = nub (list_eq_dec eq_nat_dec) (filter is_perm Ps).
 Proof.
@@ -160,8 +152,8 @@ Lemma score0_bound :
   forall (n : nat) (L : list nat), score0 (n_strings n L) <= length L + 1 - n.
 Proof.
   intros n L.
-  unfold score0.
-  rewrite collect_bound, n_strings_length.
+  unfold score0, collect.
+  rewrite select_length, n_strings_length.
   trivial.
 Qed.
 
