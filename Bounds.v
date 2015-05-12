@@ -28,11 +28,14 @@ Definition is_perm (P : list nat) :=
 Definition is_visited (P : list nat) (Ps : list (list nat)) :=
   to_bool (in_dec (list_eq_dec eq_nat_dec) P Ps).
 
-Fixpoint collect (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
+Fixpoint assemble (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
   match Ps with
   | [] => []
-  | P :: Ps => (if f P Ps then [P] else []) ++ collect f Ps
+  | P :: Ps => f P Ps :: assemble f Ps
   end.
+
+Definition collect (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
+  select (assemble f Ps) Ps.
 
 Definition dscore0 (P : list nat) (Ps : list (list nat)) :=
   (is_perm P && negb (is_visited P Ps))%bool.
@@ -133,10 +136,8 @@ Lemma collect_bound :
   forall (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)),
     length (collect f Ps) <= length Ps.
 Proof.
-  intros f Ps.
-  induction Ps as [|P Ps]; trivial.
-  simpl.
-  destruct (f P Ps); simpl; omega.
+  intros.
+  apply select_length.
 Qed.
 
 Lemma dscore0_correct :
@@ -144,11 +145,15 @@ Lemma dscore0_correct :
 Proof.
   intro Ps.
   rewrite nub_filter.
+  unfold collect.
   induction Ps as [|P Ps IH]; trivial.
   simpl.
-  rewrite IH.
-  unfold dscore0, is_visited.
-  destruct (in_dec (list_eq_dec eq_nat_dec) P Ps); simpl; destruct (is_perm P); trivial.
+  unfold dscore0 at 1, is_visited.
+  destruct (in_dec (list_eq_dec eq_nat_dec) P Ps);
+    simpl;
+    rewrite <- IH;
+    destruct (is_perm P);
+    trivial.
 Qed.
 
 Lemma score0_bound :

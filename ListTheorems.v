@@ -16,6 +16,9 @@ Fixpoint nub
     | x :: M => (if in_dec eq_dec x M then [] else [x]) ++ nub eq_dec M
     end.
 
+Definition select {A : Type} (L : list bool) (M : list A) :=
+  map (@snd bool A) (filter (@fst bool A) (combine L M)).
+
 Lemma firstn_correct :
   forall (A : Type) (L M : list A), firstn (length L) (L ++ M) = L.
 Proof.
@@ -225,6 +228,16 @@ Proof.
     destruct (f x);
     trivial;
     discriminate.
+Qed.
+
+Lemma select_length :
+  forall (A : Type) (L : list bool) (M : list A),
+    length (select L M) <= length M.
+Proof.
+  intros A L M.
+  unfold select.
+  rewrite map_length, filter_length, combine_length.
+  auto with *.
 Qed.
 
 Definition search
