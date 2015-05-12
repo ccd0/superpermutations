@@ -103,19 +103,6 @@ Proof.
   + destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
 Qed.
 
-Lemma visited_correct :
-  forall (n : nat) (L P : list nat),
-    In P (visited n L) <-> substring P L /\ Permutation (seq 0 n) P.
-Proof.
-  intros n L P.
-  unfold visited, is_perm.
-  rewrite filter_In, to_bool_iff, n_strings_correct.
-  intuition.
-  rewrite <- (seq_length n 0).
-  apply Permutation_length.
-  auto with *.
-Qed.
-
 Lemma score0_bound :
   forall (n : nat) (L : list nat), score0 n (visited n L) <= length L + 1 - n.
 Proof.
@@ -138,8 +125,12 @@ Proof.
   + apply NoDup_nub.
   + apply NoDup_permutations, NoDup_seq.
   + intro P.
-    rewrite in_nub, visited_correct, permutations_correct.
+    unfold visited, is_perm.
+    rewrite permutations_correct, in_nub, filter_In, to_bool_iff, n_strings_correct.
     intuition.
+    rewrite <- (seq_length n 0).
+    apply Permutation_length.
+    auto with *.
 Qed.
 
 Theorem bound0 :
