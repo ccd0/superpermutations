@@ -22,10 +22,11 @@ Fixpoint n_strings (n : nat) (L : list nat) :=
 Definition to_bool {P Q : Prop} (x : {P} + {Q}) :=
   if x then true else false.
 
+Definition is_perm (n : nat) (P : list nat) :=
+  to_bool (Permutation_dec eq_nat_dec (seq 0 n) P).
+
 Definition visited (n : nat) (L : list nat) :=
-  filter
-    (fun P => to_bool (Permutation_dec eq_nat_dec (seq 0 n) P))
-    (n_strings n L).
+  filter (is_perm n) (n_strings n L).
 
 Definition score0 (n : nat) (Ps : list (list nat)) :=
   length (nub (list_eq_dec eq_nat_dec) Ps).
@@ -107,7 +108,7 @@ Lemma visited_correct :
     In P (visited n L) <-> substring P L /\ Permutation (seq 0 n) P.
 Proof.
   intros n L P.
-  unfold visited.
+  unfold visited, is_perm.
   rewrite filter_In, to_bool_iff, n_strings_correct.
   intuition.
   rewrite <- (seq_length n 0).
