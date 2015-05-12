@@ -28,14 +28,11 @@ Definition is_perm (P : list nat) :=
 Definition is_visited (P : list nat) (Ps : list (list nat)) :=
   to_bool (in_dec (list_eq_dec eq_nat_dec) P Ps).
 
-Fixpoint assemble (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
+Fixpoint dscore0 (Ps : list (list nat)) :=
   match Ps with
   | [] => []
-  | P :: Ps => f P Ps :: assemble f Ps
+  | P :: Ps => (is_perm P && negb (is_visited P Ps))%bool :: dscore0 Ps
   end.
-
-Definition dscore0 (Ps : list (list nat)) :=
-  assemble (fun P Qs => (is_perm P && negb (is_visited P Qs))%bool) Ps.
 
 Definition score0 (Ps : list (list nat)) :=
   length (select (dscore0 Ps) Ps).
