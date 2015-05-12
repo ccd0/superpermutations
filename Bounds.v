@@ -22,17 +22,34 @@ Fixpoint n_strings (n : nat) (L : list nat) :=
 Definition to_bool {P Q : Prop} (x : {P} + {Q}) :=
   if x then true else false.
 
-Definition is_perm (n : nat) (P : list nat) :=
-  to_bool (Permutation_dec eq_nat_dec (seq 0 n) P).
+Definition is_perm (P : list nat) :=
+  to_bool (Permutation_dec eq_nat_dec (seq 0 (length P)) P).
 
 Definition score0 (n : nat) (Ps : list (list nat)) :=
-  length (nub (list_eq_dec eq_nat_dec) (filter (is_perm n) Ps)).
+  length (nub (list_eq_dec eq_nat_dec) (filter is_perm Ps)).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
 Proof.
   intuition.
   discriminate.
+Qed.
+
+Lemma Permutation_is_perm :
+  forall (n : nat) (P : list nat), Permutation (seq 0 n) P <-> length P = n /\ is_perm P = true.
+Proof.
+  intros n P.
+  unfold is_perm.
+  rewrite to_bool_iff.
+  split.
+  - intro H.
+    pose (Permutation_length H) as HL.
+    rewrite seq_length in HL.
+    subst n.
+    tauto.
+  - intros [E H].
+    subst n.
+    trivial.
 Qed.
 
 Lemma n_strings_correct :
@@ -122,12 +139,11 @@ Proof.
   + apply NoDup_nub.
   + apply NoDup_permutations, NoDup_seq.
   + intro P.
-    unfold is_perm.
-    rewrite permutations_correct, in_nub, filter_In, to_bool_iff, n_strings_correct.
-    intuition.
-    rewrite <- (seq_length n 0).
-    apply Permutation_length.
-    auto with *.
+    rewrite in_nub, filter_In, n_strings_correct.
+    rewrite permutations_correct, Permutation_is_perm.
+    specialize (H P).
+    rewrite Permutation_is_perm in H.
+    tauto.
 Qed.
 
 Theorem bound0 :
