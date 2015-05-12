@@ -34,14 +34,11 @@ Fixpoint assemble (f : list nat -> list (list nat) -> bool) (Ps : list (list nat
   | P :: Ps => f P Ps :: assemble f Ps
   end.
 
-Definition collect (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
-  select (assemble f Ps) Ps.
-
-Definition dscore0 (P : list nat) (Ps : list (list nat)) :=
-  (is_perm P && negb (is_visited P Ps))%bool.
+Definition dscore0 (Ps : list (list nat)) :=
+  assemble (fun P Qs => (is_perm P && negb (is_visited P Qs))%bool) Ps.
 
 Definition score0 (Ps : list (list nat)) :=
-  length (collect dscore0 Ps).
+  length (select (dscore0 Ps) Ps).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -133,14 +130,14 @@ Proof.
 Qed.
 
 Lemma dscore0_correct :
-  forall Ps : list (list nat), collect dscore0 Ps = nub (list_eq_dec eq_nat_dec) (filter is_perm Ps).
+  forall Ps : list (list nat),
+    select (dscore0 Ps) Ps = nub (list_eq_dec eq_nat_dec) (filter is_perm Ps).
 Proof.
   intro Ps.
   rewrite nub_filter.
-  unfold collect.
   induction Ps as [|P Ps IH]; trivial.
+  unfold dscore0, is_visited.
   simpl.
-  unfold dscore0 at 1, is_visited.
   destruct (in_dec (list_eq_dec eq_nat_dec) P Ps);
     simpl;
     rewrite <- IH;
@@ -152,7 +149,7 @@ Lemma score0_bound :
   forall (n : nat) (L : list nat), score0 (n_strings n L) <= length L + 1 - n.
 Proof.
   intros n L.
-  unfold score0, collect.
+  unfold score0.
   rewrite select_length, n_strings_length.
   trivial.
 Qed.
