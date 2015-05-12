@@ -13,7 +13,7 @@ Fixpoint nub
   {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (L : list A) :=
     match L with
     | [] => []
-    | x :: M => if in_dec eq_dec x M then nub eq_dec M else x :: nub eq_dec M
+    | x :: M => (if in_dec eq_dec x M then [] else [x]) ++ nub eq_dec M
     end.
 
 Lemma firstn_correct :
