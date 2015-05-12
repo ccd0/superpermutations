@@ -25,8 +25,20 @@ Definition to_bool {P Q : Prop} (x : {P} + {Q}) :=
 Definition is_perm (P : list nat) :=
   to_bool (Permutation_dec eq_nat_dec (seq 0 (length P)) P).
 
-Definition score0 (n : nat) (Ps : list (list nat)) :=
-  length (nub (list_eq_dec eq_nat_dec) (filter is_perm Ps)).
+Definition is_visited (P : list nat) (Ps : list (list nat)) :=
+  to_bool (in_dec (list_eq_dec eq_nat_dec) P Ps).
+
+Fixpoint collect (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
+  match Ps with
+  | [] => []
+  | P :: Ps => (if f P Ps then [P] else []) ++ collect f Ps
+  end.
+
+Definition dscore0 (P : list nat) (Ps : list (list nat)) :=
+  (is_perm P && negb (is_visited P Ps))%bool.
+
+Definition score0 (Ps : list (list nat)) :=
+  length (collect dscore0 Ps).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -117,24 +129,48 @@ Proof.
   + destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
 Qed.
 
+Lemma collect_bound :
+  forall (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)),
+    length (collect f Ps) <= length Ps.
+Proof.
+  intros f Ps.
+  induction Ps as [|P Ps]; trivial.
+  simpl.
+  destruct (f P Ps); simpl; omega.
+Qed.
+
+Lemma dscore0_correct :
+  forall Ps : list (list nat), collect dscore0 Ps = nub (list_eq_dec eq_nat_dec) (filter is_perm Ps).
+Proof.
+  intro Ps.
+  rewrite nub_filter.
+  induction Ps as [|P Ps IH]; trivial.
+  simpl.
+  rewrite IH.
+  unfold dscore0, is_visited.
+  destruct (in_dec (list_eq_dec eq_nat_dec) P Ps); simpl; destruct (is_perm P); trivial.
+Qed.
+
 Lemma score0_bound :
-  forall (n : nat) (L : list nat), score0 n (n_strings n L) <= length L + 1 - n.
+  forall (n : nat) (L : list nat), score0 (n_strings n L) <= length L + 1 - n.
 Proof.
   intros n L.
   unfold score0.
-  rewrite nub_length, filter_length, n_strings_length.
+  rewrite collect_bound, n_strings_length.
   trivial.
 Qed.
 
 Lemma score0_final :
   forall (n : nat) (L : list nat),
-    all_perms n L -> score0 n (n_strings n L) = fact n.
+    all_perms n L -> score0 (n_strings n L) = fact n.
 Proof.
   intros n L H.
   assert (length (permutations (seq 0 n)) = fact n) as F.
     rewrite permutations_length.
     apply f_equal, seq_length.
   rewrite <- F.
+  unfold score0.
+  rewrite dscore0_correct.
   apply Permutation_length, NoDup_Permutation.
   + apply NoDup_nub.
   + apply NoDup_permutations, NoDup_seq.

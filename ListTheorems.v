@@ -207,6 +207,26 @@ Proof.
     omega.
 Qed.
 
+Lemma nub_filter :
+  forall (A : Type) eq_dec (f : A -> bool) (L : list A),
+    nub eq_dec (filter f L) = filter f (nub eq_dec L).
+Proof.
+  intros A eq_dec f L.
+  induction L as [|x L IH]; trivial.
+  simpl.
+  destruct (f x) eqn:E;
+    simpl;
+    rewrite IH;
+    destruct (in_dec eq_dec x L) as [H1|H1];
+    destruct (in_dec eq_dec x (filter f L)) as [H2|H2];
+    rewrite filter_In in H2;
+    try tauto;
+    simpl;
+    destruct (f x);
+    trivial;
+    discriminate.
+Qed.
+
 Definition search
   {A : Type}
   (eq_dec : forall x y : A, {x = y} + {x <> y})
