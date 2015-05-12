@@ -116,19 +116,13 @@ Proof.
   auto with *.
 Qed.
 
-Lemma visited_length :
-  forall (n : nat) (L : list nat), length (visited n L) <= length L + 1 - n.
-Proof.
-  intros n L.
-  rewrite <- n_strings_length.
-  apply filter_length.
-Qed.
-
 Lemma score0_bound :
-  forall (n : nat) (L : list nat), length (visited n L) >= score0 n (visited n L).
+  forall (n : nat) (L : list nat), score0 n (visited n L) <= length L + 1 - n.
 Proof.
   intros n L.
-  apply nub_length.
+  unfold score0, visited.
+  rewrite nub_length, filter_length, n_strings_length.
+  trivial.
 Qed.
 
 Lemma score0_final :
@@ -167,8 +161,7 @@ Theorem bound1 :
 Proof.
   intros n L H.
   rewrite <- (score0_final n L) by trivial.
-  pose (visited_length n L) as IE1.
-  pose (score0_bound n L) as IE2.
+  pose (score0_bound n L) as IE.
   pose (bound0 n L H) as B0.
   omega.
 Qed.
