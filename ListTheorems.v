@@ -9,16 +9,12 @@ Definition injective {A B : Type} (L : list A) (f : A -> B) :=
 Definition pairwise_disjoint {A B : Type} (L : list A) (f : A -> list B) :=
   forall x1 x2 y, In x1 L -> In x2 L -> In y (f x1) -> In y (f x2) -> x1 = x2.
 
-Fixpoint nub'
+Fixpoint nub
   {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (L : list A) :=
     match L with
     | [] => []
-    | x :: M => if in_dec eq_dec x M then nub' eq_dec M else x :: nub' eq_dec M
+    | x :: M => if in_dec eq_dec x M then nub eq_dec M else x :: nub eq_dec M
     end.
-
-Definition nub
-  {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (L : list A) :=
-    rev (nub' eq_dec (rev L)).
 
 Lemma firstn_correct :
   forall (A : Type) (L M : list A), firstn (length L) (L ++ M) = L.
@@ -172,22 +168,8 @@ Proof.
   + tauto.
 Qed.
 
-Lemma Permutation_NoDup_iff :
-  forall (A : Type) (L M : list A), Permutation L M -> (NoDup L <-> NoDup M).
-Proof.
-  intros.
-  split; apply Permutation_NoDup; [|apply Permutation_sym]; trivial.
-Qed.
-
-Lemma NoDup_rev :
-  forall (A : Type) (L : list A), NoDup (rev L) <-> NoDup L.
-Proof.
-  intros.
-  apply Permutation_NoDup_iff, Permutation_sym, Permutation_rev.
-Qed.
-
-Lemma in_nub' :
-  forall (A : Type) eq_dec (L : list A) (x : A), In x (nub' eq_dec L) <-> In x L.
+Lemma in_nub :
+  forall (A : Type) eq_dec (L : list A) (x : A), In x (nub eq_dec L) <-> In x L.
 Proof.
   intros A eq_dec L x.
   induction L as [|y L IH]; [tauto|].
@@ -200,37 +182,21 @@ Proof.
   + auto with *.
 Qed.
 
-Lemma in_nub :
-  forall (A : Type) eq_dec (L : list A) (x : A), In x (nub eq_dec L) <-> In x L.
-Proof.
-  intros.
-  unfold nub.
-  rewrite <- in_rev, in_nub', <- in_rev.
-  tauto.
-Qed.
-
-Lemma NoDup_nub' :
-  forall (A : Type) eq_dec (L : list A), NoDup (nub' eq_dec L).
-Proof.
-  intros A eq_dec L.
-  induction L as [|x L IH]; [apply NoDup_nil|].
-  unfold nub'.
-  destruct (in_dec eq_dec x L) as [H|H]; fold (@nub' A).
-  + trivial.
-  + apply NoDup_cons; trivial.
-    rewrite in_nub'.
-    trivial.
-Qed.
-
 Lemma NoDup_nub :
   forall (A : Type) eq_dec (L : list A), NoDup (nub eq_dec L).
 Proof.
-  intros.
-  apply NoDup_rev, NoDup_nub'.
+  intros A eq_dec L.
+  induction L as [|x L IH]; [apply NoDup_nil|].
+  unfold nub.
+  destruct (in_dec eq_dec x L) as [H|H]; fold (@nub A).
+  + trivial.
+  + apply NoDup_cons; trivial.
+    rewrite in_nub.
+    trivial.
 Qed.
 
-Lemma nub'_length :
-  forall (A : Type) eq_dec (L : list A), length (nub' eq_dec L) <= length L.
+Lemma nub_length :
+  forall (A : Type) eq_dec (L : list A), length (nub eq_dec L) <= length L.
 Proof.
   intros A eq_dec L.
   induction L as [|x L IH]; trivial.
@@ -239,15 +205,6 @@ Proof.
   + auto.
   + simpl.
     omega.
-Qed.
-
-Lemma nub_length :
-  forall (A : Type) eq_dec (L : list A), length (nub eq_dec L) <= length L.
-Proof.
-  intros.
-  unfold nub.
-  rewrite rev_length, <- (rev_length L).
-  apply nub'_length.
 Qed.
 
 Definition search
