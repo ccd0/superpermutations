@@ -25,11 +25,8 @@ Definition to_bool {P Q : Prop} (x : {P} + {Q}) :=
 Definition is_perm (n : nat) (P : list nat) :=
   to_bool (Permutation_dec eq_nat_dec (seq 0 n) P).
 
-Definition visited (n : nat) (L : list nat) :=
-  filter (is_perm n) (n_strings n L).
-
 Definition score0 (n : nat) (Ps : list (list nat)) :=
-  length (nub (list_eq_dec eq_nat_dec) Ps).
+  length (nub (list_eq_dec eq_nat_dec) (filter (is_perm n) Ps)).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -104,17 +101,17 @@ Proof.
 Qed.
 
 Lemma score0_bound :
-  forall (n : nat) (L : list nat), score0 n (visited n L) <= length L + 1 - n.
+  forall (n : nat) (L : list nat), score0 n (n_strings n L) <= length L + 1 - n.
 Proof.
   intros n L.
-  unfold score0, visited.
+  unfold score0.
   rewrite nub_length, filter_length, n_strings_length.
   trivial.
 Qed.
 
 Lemma score0_final :
   forall (n : nat) (L : list nat),
-    all_perms n L -> score0 n (visited n L) = fact n.
+    all_perms n L -> score0 n (n_strings n L) = fact n.
 Proof.
   intros n L H.
   assert (length (permutations (seq 0 n)) = fact n) as F.
@@ -125,7 +122,7 @@ Proof.
   + apply NoDup_nub.
   + apply NoDup_permutations, NoDup_seq.
   + intro P.
-    unfold visited, is_perm.
+    unfold is_perm.
     rewrite permutations_correct, in_nub, filter_In, to_bool_iff, n_strings_correct.
     intuition.
     rewrite <- (seq_length n 0).
