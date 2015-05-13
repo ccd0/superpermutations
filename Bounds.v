@@ -34,11 +34,11 @@ Fixpoint assemble (f : list nat -> list (list nat) -> bool) (Ps : list (list nat
   | P :: Ps => f P Ps :: assemble f Ps
   end.
 
-Definition dscore0 (Ps : list (list nat)) :=
-  assemble (fun P Qs => (is_perm P && negb (is_visited P Qs))%bool) Ps.
+Definition dscore0 (P : list nat) (Ps : list (list nat)) :=
+  (is_perm P && negb (is_visited P Ps))%bool.
 
 Definition score0 (Ps : list (list nat)) :=
-  length (select (dscore0 Ps) Ps).
+  length (select (assemble dscore0 Ps) Ps).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -131,7 +131,7 @@ Qed.
 
 Lemma dscore0_correct :
   forall Ps : list (list nat),
-    select (dscore0 Ps) Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
+    select (assemble dscore0 Ps) Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
 Proof.
   intro Ps.
   rewrite nub'_filter.
