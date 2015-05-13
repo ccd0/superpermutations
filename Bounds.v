@@ -37,6 +37,12 @@ Fixpoint assemble {A B : Type} (f : A -> list A -> B) (L : list A) :=
   | x :: M => f x M :: assemble f M
   end.
 
+Definition shift {A B : Type} (f : A -> list A -> B) (x : B) (y : A) (L : list A) :=
+  match L with
+  | [] => x
+  | z :: M => f z M
+  end.
+
 Definition test0 (P : list nat) (Ps : list (list nat)) :=
   (is_perm P && negb (is_visited P Ps))%bool.
 
@@ -46,14 +52,13 @@ Definition chosen0 (Ps : list (list nat)) :=
 Definition score0 (Ps : list (list nat)) :=
   length (select (chosen0 Ps) Ps).
 
-Definition test1 (P : list nat) (Ps : list (list nat)) :=
+Definition test1' (P : list nat) (Ps : list (list nat)) :=
   (test0 P Ps && cycle_complete P (P :: Ps))%bool.
 
+Definition test1 := shift test1' false.
+
 Definition chosen1 (Ps : list (list nat)) :=
-  match Ps with
-  | [] => []
-  | P :: Qs => assemble test1 Qs ++ [false]
-  end.
+  assemble test1 Ps.
 
 Definition score1 (Ps : list (list nat)) :=
   length (select (chosen1 Ps) Ps).
