@@ -34,11 +34,14 @@ Fixpoint assemble (f : list nat -> list (list nat) -> bool) (Ps : list (list nat
   | P :: Ps => f P Ps :: assemble f Ps
   end.
 
-Definition dscore0 (P : list nat) (Ps : list (list nat)) :=
+Definition test0 (P : list nat) (Ps : list (list nat)) :=
   (is_perm P && negb (is_visited P Ps))%bool.
 
+Definition chosen0 (Ps : list (list nat)) :=
+  assemble test0 Ps.
+
 Definition score0 (Ps : list (list nat)) :=
-  length (select (assemble dscore0 Ps) Ps).
+  length (select (chosen0 Ps) Ps).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -129,14 +132,14 @@ Proof.
   - destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
 Qed.
 
-Lemma dscore0_correct :
+Lemma chosen0_correct :
   forall Ps : list (list nat),
-    select (assemble dscore0 Ps) Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
+    select (chosen0 Ps) Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
 Proof.
   intro Ps.
   rewrite nub'_filter.
   induction Ps as [|P Ps IH]; trivial.
-  unfold dscore0, is_visited.
+  unfold chosen0, test0, is_visited.
   simpl.
   destruct (in_dec (list_eq_dec eq_nat_dec) P Ps);
     simpl;
@@ -164,7 +167,7 @@ Proof.
     apply f_equal, seq_length.
   rewrite <- F.
   unfold score0.
-  rewrite dscore0_correct.
+  rewrite chosen0_correct.
   apply Permutation_length, NoDup_Permutation.
   - apply NoDup_nub'.
   - apply NoDup_permutations, NoDup_seq.
