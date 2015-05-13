@@ -28,6 +28,9 @@ Definition is_perm (P : list nat) :=
 Definition is_visited (P : list nat) (Ps : list (list nat)) :=
   to_bool (in_dec (list_eq_dec eq_nat_dec) P Ps).
 
+Definition cycle_complete (P : list nat) (Ps : list (list nat)) :=
+  to_bool (incl_dec (list_eq_dec eq_nat_dec) (rotations P) Ps).
+
 Fixpoint assemble {A B : Type} (f : A -> list A -> B) (L : list A) :=
   match L with
   | [] => []
@@ -42,6 +45,18 @@ Definition chosen0 (Ps : list (list nat)) :=
 
 Definition score0 (Ps : list (list nat)) :=
   length (select (chosen0 Ps) Ps).
+
+Definition test1 (P : list nat) (Ps : list (list nat)) :=
+  (test0 P Ps && cycle_complete P (P :: Ps))%bool.
+
+Definition chosen1 (Ps : list (list nat)) :=
+  match Ps with
+  | [] => []
+  | P :: Qs => assemble test1 Qs ++ [false]
+  end.
+
+Definition score1 (Ps : list (list nat)) :=
+  length (select (chosen1 Ps) Ps).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
