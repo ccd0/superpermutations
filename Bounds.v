@@ -76,23 +76,23 @@ Proof.
     repeat rewrite app_length in H1.
     omega.
   induction L as [|x L IH]; simpl.
-  + destruct (le_dec n 0) as [Len|Len]; [|apply (B []); trivial].
+  - destruct (le_dec n 0) as [Len|Len]; [|apply (B []); trivial].
     simpl.
     split.
-    - intros [E|F]; [|tauto].
+    + intros [E|F]; [|tauto].
       subst P.
       simpl.
       split; [|omega].
       exists [], [].
       trivial.
-    - destruct P; auto with *.
+    + destruct P; auto with *.
       simpl in *.
       omega.
-  + destruct (le_dec n (S (length L))) as [Len|Len]; [|apply B; trivial].
+  - destruct (le_dec n (S (length L))) as [Len|Len]; [|apply B; trivial].
     simpl.
     rewrite IH.
     split.
-    - intros [E|[[LH [LT H1]] H2]].
+    + intros [E|[[LH [LT H1]] H2]].
       * subst P.
         rewrite firstn_length.
         rewrite min_l by trivial.
@@ -103,7 +103,7 @@ Proof.
         subst L.
         exists (x :: LH), LT.
         trivial.
-    - intros [[LH [LT H1]] E].
+    + intros [[LH [LT H1]] E].
       subst n.
       destruct LH as [|y LH].
       * left.
@@ -122,8 +122,8 @@ Lemma n_strings_length :
 Proof.
   intros n L.
   induction L as [|x L IH]; simpl.
-  + destruct (le_dec n 0); destruct n; trivial; omega.
-  + destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
+  - destruct (le_dec n 0); destruct n; trivial; omega.
+  - destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
 Qed.
 
 Lemma dscore0_correct :
@@ -163,9 +163,9 @@ Proof.
   unfold score0.
   rewrite dscore0_correct.
   apply Permutation_length, NoDup_Permutation.
-  + apply NoDup_nub.
-  + apply NoDup_permutations, NoDup_seq.
-  + intro P.
+  - apply NoDup_nub.
+  - apply NoDup_permutations, NoDup_seq.
+  - intro P.
     rewrite in_nub, filter_In, n_strings_correct.
     rewrite permutations_correct, Permutation_is_perm.
     specialize (H P).

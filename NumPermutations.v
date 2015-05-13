@@ -53,8 +53,8 @@ Proof.
   generalize M.
   clear M RW.
   induction L as [|x L IH]; intro M; simpl.
-  + auto with *.
-  + specialize (IH (M ++ [x])).
+  - auto with *.
+  - specialize (IH (M ++ [x])).
     rewrite <- app_assoc in *.
     trivial.
 Qed.
@@ -96,11 +96,11 @@ Proof.
   clear M RW.
   induction L as [|y L IH]; [simpl in H; tauto|]; intro M.
   destruct H as [H|H].
-  + subst.
+  - subst.
     exists 0.
     simpl.
     auto with *.
-  + specialize (IH H (M ++ [y])).
+  - specialize (IH H (M ++ [y])).
     destruct IH as [n [H1 H2]].
     exists (S n).
     simpl.
@@ -114,15 +114,15 @@ Theorem permutations_correct :
 Proof.
   intros A L.
   induction L as [|x L IH]; intro M; simpl.
-  + split.
-    - intuition; subst; trivial.
-    - intro H.
+  - split.
+    + intuition; subst; trivial.
+    + intro H.
       rewrite (Permutation_nil H).
       tauto.
-  + rewrite in_flat_map.
+  - rewrite in_flat_map.
     unfold rotations.
     split.
-    - intros [N [H1 H2]].
+    + intros [N [H1 H2]].
       rewrite in_map_iff in *.
       destruct H1 as [P [E1 H1]].
       destruct H2 as [k [E2 H2]].
@@ -130,7 +130,7 @@ Proof.
       rewrite IH in H1.
       rewrite Permutation_rotate.
       auto.
-    - intro H.
+    + intro H.
       assert (In x M) as HxM.
         apply (Permutation_in _ H).
         auto with *.
@@ -173,10 +173,10 @@ Proof.
   clear HL M Hk2.
   revert L.
   induction k as [|k IH]; intros [|y L] M Hk ER; simpl in Hk; try omega.
-  + injection ER as E.
+  - injection ER as E.
     subst y.
     auto with *.
-  + apply lt_S_n in Hk.
+  - apply lt_S_n in Hk.
     specialize (IH L (M ++ [y])).
     simpl in *.
     rewrite <- app_assoc in ER.
@@ -220,10 +220,10 @@ Lemma rotate_injective3 :
 Proof.
   intros.
   assert (k1 <= k2 /\ k1 >= k2).
-  + split.
-    - apply (rotate_injective2 A _ _ L M); trivial.
-    - apply (rotate_injective2 A _ _ M L); auto.
-  + omega.
+  - split.
+    + apply (rotate_injective2 A _ _ L M); trivial.
+    + apply (rotate_injective2 A _ _ M L); auto.
+  - omega.
 Qed.
 
 Lemma NoDup_rotations :
@@ -243,7 +243,7 @@ Proof.
   induction L as [|x L IH]; intro ND; [apply NoDup_cons, NoDup_nil; tauto|].
   simpl.
   apply NoDup_flat_map.
-  + intros M HM.
+  - intros M HM.
     rewrite in_map_iff in HM.
     destruct HM as [P [E HP]].
     subst M.
@@ -251,7 +251,7 @@ Proof.
     apply NoDup_rotations.
     revert HP ND.
     apply Permutation_NoDup.
-  + intros L1' L2' M.
+  - intros L1' L2' M.
     unfold rotations.
     repeat rewrite in_map_iff.
     intros [L1 [E1 H1]] [L2 [E2 H2]] [k1 [E3 H3]] [k2 [ER H4]].
@@ -272,11 +272,11 @@ Proof.
       with (length (x :: L1)) in ER by omega.
     rewrite rotate_full, EL, rotate_full in ER.
     trivial.
-  + apply NoDup_map.
-    - intros L1 L2 H1 H2 E.
+  - apply NoDup_map.
+    + intros L1 L2 H1 H2 E.
       injection E.
       trivial.
-    - apply IH.
+    + apply IH.
       revert ND.
       apply (NoDup_remove_1 nil).
 Qed.
@@ -288,9 +288,9 @@ Proof.
   induction L as [|x L IH]; trivial.
   simpl.
   rewrite (flat_map_length _ _ _ _ (S (length L))).
-  + rewrite map_length, IH.
+  - rewrite map_length, IH.
     trivial.
-  + intros M H.
+  - intros M H.
     unfold rotations.
     rewrite map_length, seq_length.
     rewrite in_map_iff in H.

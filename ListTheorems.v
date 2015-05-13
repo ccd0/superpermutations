@@ -35,9 +35,9 @@ Proof.
   intros m n x.
   revert m.
   induction n as [|n IH]; intro m.
-  + simpl in *.
+  - simpl in *.
     omega.
-  + simpl.
+  - simpl.
     specialize (IH (S m)).
     assert (m = x \/ m <> x) by omega.
     intuition.
@@ -67,8 +67,8 @@ Proof.
   induction L as [|x L IH]; trivial.
   simpl.
   destruct (f x); simpl.
-  + omega.
-  + auto.
+  - omega.
+  - auto.
 Qed.
 
 Lemma NoDup_app :
@@ -80,10 +80,10 @@ Proof.
   intro HD.
   simpl.
   apply NoDup_cons.
-  + rewrite in_app_iff.
+  - rewrite in_app_iff.
     specialize (HD x).
     intuition.
-  + apply IH.
+  - apply IH.
     intro y.
     specialize (HD y).
     intuition.
@@ -97,11 +97,11 @@ Proof.
   induction HL as [|x L Hx HL IH]; [apply NoDup_nil|].
   simpl.
   apply NoDup_cons.
-  + rewrite in_map_iff.
+  - rewrite in_map_iff.
     intros [x2 [Ef Hx2]].
     specialize (Hf x2 x).
     rewrite <- Hf in Hx; auto with *.
-  + compute in *.
+  - compute in *.
     auto.
 Qed.
 
@@ -116,14 +116,14 @@ Proof.
   induction HL as [|x L Hx HL IH]; [apply NoDup_nil|].
   simpl.
   apply NoDup_app.
-  + apply Hf1.
+  - apply Hf1.
     auto with *.
-  + apply IH.
-    - auto with *.
-    - intros x1 x2 y.
+  - apply IH.
+    + auto with *.
+    + intros x1 x2 y.
       specialize (Hf2 x1 x2 y).
       auto with *.
-  + intros y [H1 H2].
+  - intros y [H1 H2].
     rewrite in_flat_map in H2.
     destruct H2 as [x2 [H2 H3]].
     specialize (Hf2 x x2 y).
@@ -136,13 +136,13 @@ Proof.
   intros m n.
   revert m.
   induction n as [|n IH]; intro m.
-  + apply NoDup_nil.
-  + specialize (IH (S m)).
+  - apply NoDup_nil.
+  - specialize (IH (S m)).
     simpl.
     apply NoDup_cons.
-    - rewrite in_seq.
+    + rewrite in_seq.
       omega.
-    - trivial.
+    + trivial.
 Qed.
 
 Lemma Permutation_NoDup :
@@ -150,25 +150,25 @@ Lemma Permutation_NoDup :
 Proof.
   intros A L M HP.
   induction HP as [ |x L M HP IH| | ].
-  + trivial.
-  + intro H.
+  - trivial.
+  - intro H.
     apply NoDup_cons.
-    - intro H2.
+    + intro H2.
       symmetry in HP.
       apply (Permutation_in x) in HP; trivial.
       contradict HP.
       revert H.
       apply (NoDup_remove_2 nil).
-    - apply IH.
+    + apply IH.
       revert H.
       apply (NoDup_remove_1 nil).
-  + intro H.
+  - intro H.
     pose (NoDup_remove_1 nil _ _ H) as H2.
     pose (NoDup_remove_2 nil _ _ H) as H3.
     pose (NoDup_remove_1 nil _ _ H2) as H4.
     pose (NoDup_remove_2 nil _ _ H2) as H5.
     repeat apply NoDup_cons; firstorder.
-  + tauto.
+  - tauto.
 Qed.
 
 Lemma in_nub :
@@ -179,10 +179,10 @@ Proof.
   simpl.
   rewrite <- IH.
   destruct (in_dec eq_dec y L) as [H|H].
-  + intuition.
+  - intuition.
     subst.
     tauto.
-  + auto with *.
+  - auto with *.
 Qed.
 
 Lemma NoDup_nub :
@@ -192,8 +192,8 @@ Proof.
   induction L as [|x L IH]; [apply NoDup_nil|].
   unfold nub.
   destruct (in_dec eq_dec x L) as [H|H]; fold (@nub A).
-  + trivial.
-  + apply NoDup_cons; trivial.
+  - trivial.
+  - apply NoDup_cons; trivial.
     rewrite in_nub.
     trivial.
 Qed.
@@ -205,8 +205,8 @@ Proof.
   induction L as [|x L IH]; trivial.
   simpl.
   destruct (in_dec eq_dec x L) as [H|H].
-  + auto.
-  + simpl.
+  - auto.
+  - simpl.
     omega.
 Qed.
 
@@ -247,14 +247,14 @@ Definition search
     {M : list A & {N | L = M ++ x :: N}} + {~ In x L}.
 Proof.
   induction L as [|y L IH].
-  + right.
+  - right.
     tauto.
-  + destruct (eq_dec x y) as [E|NE].
-    - left.
+  - destruct (eq_dec x y) as [E|NE].
+    + left.
       exists nil, L.
       subst y.
       trivial.
-    - destruct IH as [[M [N P]]|NI].
+    + destruct IH as [[M [N P]]|NI].
       * left.
         exists (y :: M), N.
         subst L.
@@ -271,16 +271,16 @@ Definition Permutation_dec
 Proof.
   revert M.
   induction L as [|x L IH]; intro M.
-  + destruct M as [|x M].
-    - left.
+  - destruct M as [|x M].
+    + left.
       apply perm_nil.
-    - right.
+    + right.
       intro H.
       apply Permutation_nil in H.
       discriminate.
-  + destruct (search eq_dec x M) as [[M1 [M2 HM]]|NI].
+  - destruct (search eq_dec x M) as [[M1 [M2 HM]]|NI].
     subst M.
-    - specialize (IH (M1 ++ M2)).
+    + specialize (IH (M1 ++ M2)).
       destruct IH as [YP|NP].
       * left.
         apply Permutation_cons_app.
@@ -288,7 +288,7 @@ Proof.
       * right.
         contradict NP.
         exact (Permutation_cons_app_inv M1 M2 NP).
-    - right.
+    + right.
       contradict NI.
       apply (Permutation_in x NI).
       auto with *.
