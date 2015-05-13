@@ -28,10 +28,10 @@ Definition is_perm (P : list nat) :=
 Definition is_visited (P : list nat) (Ps : list (list nat)) :=
   to_bool (in_dec (list_eq_dec eq_nat_dec) P Ps).
 
-Fixpoint assemble (f : list nat -> list (list nat) -> bool) (Ps : list (list nat)) :=
-  match Ps with
+Fixpoint assemble {A B : Type} (f : A -> list A -> B) (L : list A) :=
+  match L with
   | [] => []
-  | P :: Ps => f P Ps :: assemble f Ps
+  | x :: M => f x M :: assemble f M
   end.
 
 Definition test0 (P : list nat) (Ps : list (list nat)) :=
