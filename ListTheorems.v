@@ -9,11 +9,11 @@ Definition injective {A B : Type} (L : list A) (f : A -> B) :=
 Definition pairwise_disjoint {A B : Type} (L : list A) (f : A -> list B) :=
   forall x1 x2 y, In x1 L -> In x2 L -> In y (f x1) -> In y (f x2) -> x1 = x2.
 
-Fixpoint nub
+Fixpoint nub'
   {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (L : list A) :=
     match L with
     | [] => []
-    | x :: M => (if in_dec eq_dec x M then [] else [x]) ++ nub eq_dec M
+    | x :: M => (if in_dec eq_dec x M then [] else [x]) ++ nub' eq_dec M
     end.
 
 Definition select {A : Type} (L : list bool) (M : list A) :=
@@ -171,8 +171,8 @@ Proof.
   - tauto.
 Qed.
 
-Lemma in_nub :
-  forall (A : Type) eq_dec (L : list A) (x : A), In x (nub eq_dec L) <-> In x L.
+Lemma in_nub' :
+  forall (A : Type) eq_dec (L : list A) (x : A), In x (nub' eq_dec L) <-> In x L.
 Proof.
   intros A eq_dec L x.
   induction L as [|y L IH]; [tauto|].
@@ -185,21 +185,21 @@ Proof.
   - auto with *.
 Qed.
 
-Lemma NoDup_nub :
-  forall (A : Type) eq_dec (L : list A), NoDup (nub eq_dec L).
+Lemma NoDup_nub' :
+  forall (A : Type) eq_dec (L : list A), NoDup (nub' eq_dec L).
 Proof.
   intros A eq_dec L.
   induction L as [|x L IH]; [apply NoDup_nil|].
-  unfold nub.
-  destruct (in_dec eq_dec x L) as [H|H]; fold (@nub A).
+  unfold nub'.
+  destruct (in_dec eq_dec x L) as [H|H]; fold (@nub' A).
   - trivial.
   - apply NoDup_cons; trivial.
-    rewrite in_nub.
+    rewrite in_nub'.
     trivial.
 Qed.
 
-Lemma nub_length :
-  forall (A : Type) eq_dec (L : list A), length (nub eq_dec L) <= length L.
+Lemma nub'_length :
+  forall (A : Type) eq_dec (L : list A), length (nub' eq_dec L) <= length L.
 Proof.
   intros A eq_dec L.
   induction L as [|x L IH]; trivial.
@@ -210,9 +210,9 @@ Proof.
     omega.
 Qed.
 
-Lemma nub_filter :
+Lemma nub'_filter :
   forall (A : Type) eq_dec (f : A -> bool) (L : list A),
-    nub eq_dec (filter f L) = filter f (nub eq_dec L).
+    nub' eq_dec (filter f L) = filter f (nub' eq_dec L).
 Proof.
   intros A eq_dec f L.
   induction L as [|x L IH]; trivial.

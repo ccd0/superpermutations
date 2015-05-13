@@ -128,10 +128,10 @@ Qed.
 
 Lemma dscore0_correct :
   forall Ps : list (list nat),
-    select (dscore0 Ps) Ps = nub (list_eq_dec eq_nat_dec) (filter is_perm Ps).
+    select (dscore0 Ps) Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
 Proof.
   intro Ps.
-  rewrite nub_filter.
+  rewrite nub'_filter.
   induction Ps as [|P Ps IH]; trivial.
   unfold dscore0, is_visited.
   simpl.
@@ -163,10 +163,10 @@ Proof.
   unfold score0.
   rewrite dscore0_correct.
   apply Permutation_length, NoDup_Permutation.
-  - apply NoDup_nub.
+  - apply NoDup_nub'.
   - apply NoDup_permutations, NoDup_seq.
   - intro P.
-    rewrite in_nub, filter_In, n_strings_correct.
+    rewrite in_nub', filter_In, n_strings_correct.
     rewrite permutations_correct, Permutation_is_perm.
     specialize (H P).
     rewrite Permutation_is_perm in H.
