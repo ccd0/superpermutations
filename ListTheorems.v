@@ -3,20 +3,20 @@ Require Import List.
 Require Import Permutation.
 Import ListNotations.
 
-Definition injective {A B : Type} (L : list A) (f : A -> B) :=
+Definition injective {A B : Type} (L : list A) (f : A -> B) : Prop :=
   forall x1 x2, In x1 L -> In x2 L -> f x1 = f x2 -> x1 = x2.
 
-Definition pairwise_disjoint {A B : Type} (L : list A) (f : A -> list B) :=
+Definition pairwise_disjoint {A B : Type} (L : list A) (f : A -> list B) : Prop :=
   forall x1 x2 y, In x1 L -> In x2 L -> In y (f x1) -> In y (f x2) -> x1 = x2.
 
 Fixpoint nub'
-  {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (L : list A) :=
+  {A : Type} (eq_dec : forall x y : A, {x = y} + {x <> y}) (L : list A) : list A :=
     match L with
     | [] => []
     | x :: M => (if in_dec eq_dec x M then [] else [x]) ++ nub' eq_dec M
     end.
 
-Definition select {A : Type} (L : list bool) (M : list A) :=
+Definition select {A : Type} (L : list bool) (M : list A) : list A :=
   map (@snd bool A) (filter (@fst bool A) (combine L M)).
 
 Lemma firstn_correct :
@@ -243,7 +243,7 @@ Qed.
 Definition search
   {A : Type}
   (eq_dec : forall x y : A, {x = y} + {x <> y})
-  (x : A) (L : list A):
+  (x : A) (L : list A) :
     {M : list A & {N | L = M ++ x :: N}} + {~ In x L}.
 Proof.
   induction L as [|y L IH].

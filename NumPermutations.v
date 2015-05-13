@@ -4,22 +4,22 @@ Require Import Permutation.
 Require Import ListTheorems.
 Import ListNotations.
 
-Definition rotate1 {A : Type} (L : list A) :=
+Definition rotate1 {A : Type} (L : list A) : list A :=
   match L with
   | [] => []
   | x :: M => M ++ [x]
   end.
 
-Fixpoint rotate {A : Type} (k : nat) (L : list A) :=
+Fixpoint rotate {A : Type} (k : nat) (L : list A) : list A :=
   match k with
   | 0 => L
   | S k' => rotate k' (rotate1 L)
   end.
 
-Definition rotations {A : Type} (L : list A) :=
+Definition rotations {A : Type} (L : list A) : list (list A) :=
   map (fun k => rotate k L) (seq 1 (length L)).
 
-Fixpoint permutations {A : Type} (L : list A) :=
+Fixpoint permutations {A : Type} (L : list A) : list (list A) :=
   match L with
   | [] => [[]]
   | x :: M => flat_map rotations (map (cons x) (permutations M))

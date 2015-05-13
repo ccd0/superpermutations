@@ -5,13 +5,13 @@ Require Import ListTheorems.
 Require Import NumPermutations.
 Import ListNotations.
 
-Definition substring {A : Type} (L M : list A) :=
+Definition substring {A : Type} (L M : list A) : Prop :=
   exists LH LT, LH ++ L ++ LT = M.
 
-Definition all_perms (n : nat) (L : list nat) :=
+Definition all_perms (n : nat) (L : list nat) : Prop :=
   forall P, Permutation (seq 0 n) P -> substring P L.
 
-Fixpoint n_strings (n : nat) (L : list nat) :=
+Fixpoint n_strings (n : nat) (L : list nat) : list (list nat) :=
   if le_dec n (length L) then
     match L with
     | [] => [[]]
@@ -19,48 +19,50 @@ Fixpoint n_strings (n : nat) (L : list nat) :=
     end
   else [].
 
-Definition to_bool {P Q : Prop} (x : {P} + {Q}) :=
+Definition to_bool {P Q : Prop} (x : {P} + {Q}) : bool :=
   if x then true else false.
 
-Definition is_perm (P : list nat) :=
+Definition is_perm (P : list nat) : bool :=
   to_bool (Permutation_dec eq_nat_dec (seq 0 (length P)) P).
 
-Definition is_visited (P : list nat) (Ps : list (list nat)) :=
+Definition is_visited (P : list nat) (Ps : list (list nat)) : bool :=
   to_bool (in_dec (list_eq_dec eq_nat_dec) P Ps).
 
-Definition cycle_complete (P : list nat) (Ps : list (list nat)) :=
+Definition cycle_complete (P : list nat) (Ps : list (list nat)) : bool :=
   to_bool (incl_dec (list_eq_dec eq_nat_dec) (rotations P) Ps).
 
-Fixpoint assemble {A B : Type} (f : A -> list A -> B) (L : list A) :=
+Fixpoint assemble {A B : Type} (f : A -> list A -> B) (L : list A) : list B :=
   match L with
   | [] => []
   | x :: M => f x M :: assemble f M
   end.
 
-Definition shift {A B : Type} (f : A -> list A -> B) (x : B) (y : A) (L : list A) :=
-  match L with
-  | [] => x
-  | z :: M => f z M
-  end.
+Definition shift {A B : Type} (f : A -> list A -> B) (x : B) : A -> list A -> B :=
+  fun y L =>
+    match L with
+    | [] => x
+    | z :: M => f z M
+    end.
 
-Definition test0 (P : list nat) (Ps : list (list nat)) :=
+Definition test0 (P : list nat) (Ps : list (list nat)) : bool :=
   (is_perm P && negb (is_visited P Ps))%bool.
 
-Definition chosen0 (Ps : list (list nat)) :=
+Definition chosen0 (Ps : list (list nat)) : list bool :=
   assemble test0 Ps.
 
-Definition score0 (Ps : list (list nat)) :=
+Definition score0 (Ps : list (list nat)) : nat :=
   length (select (chosen0 Ps) Ps).
 
-Definition test1' (P : list nat) (Ps : list (list nat)) :=
+Definition test1' (P : list nat) (Ps : list (list nat)) : bool :=
   (test0 P Ps && cycle_complete P (P :: Ps))%bool.
 
-Definition test1 := shift test1' false.
+Definition test1 : list nat -> list (list nat) -> bool :=
+  shift test1' false.
 
-Definition chosen1 (Ps : list (list nat)) :=
+Definition chosen1 (Ps : list (list nat)) : list bool :=
   assemble test1 Ps.
 
-Definition score1 (Ps : list (list nat)) :=
+Definition score1 (Ps : list (list nat)) : nat :=
   length (select (chosen1 Ps) Ps).
 
 Lemma to_bool_iff :
