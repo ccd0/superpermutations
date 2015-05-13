@@ -293,3 +293,25 @@ Proof.
       apply (Permutation_in x NI).
       auto with *.
 Defined.
+
+Definition incl_dec
+  {A : Type}
+  (eq_dec : forall x y : A, {x = y} + {x <> y})
+  (L M : list A) :
+    {incl L M} + {~ incl L M}.
+Proof.
+  induction L as [|x L IH].
+  - left.
+    intros x H.
+    contradict H.
+  - destruct (in_dec eq_dec x M) as [Y|N].
+    + destruct IH as [Y2|N2].
+      * left.
+        auto with *.
+      * right.
+        contradict N2.
+        intro y.
+        auto with *.
+    + right.
+      auto with *.
+Defined.
