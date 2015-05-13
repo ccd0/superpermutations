@@ -31,13 +31,25 @@ Definition is_visited (P : list nat) (Ps : list (list nat)) : bool :=
 Definition cycle_complete (P : list nat) (Ps : list (list nat)) : bool :=
   to_bool (incl_dec (list_eq_dec eq_nat_dec) (rotations P) Ps).
 
-Fixpoint assemble {A B : Type} (f : A -> list A -> B) (L : list A) : list B :=
+Definition genFun (A B : Type) : Type :=
+  A -> list A -> B.
+
+Definition testFun (A : Type) : Type :=
+  A -> list A -> bool.
+
+Fixpoint assemble {A B : Type} (f : genFun A B) (L : list A) : list B :=
   match L with
   | [] => []
   | x :: M => f x M :: assemble f M
   end.
 
-Definition shift {A B : Type} (f : A -> list A -> B) (x : B) : A -> list A -> B :=
+Definition chosen {A : Type} (f : testFun A) (L : list A) : list A :=
+  select (assemble f L) L.
+
+Definition score {A : Type} (f : testFun A) (L : list A) : nat :=
+  length (chosen f L).
+
+Definition shift {A B : Type} (f : genFun A B) (x : B) : genFun A B :=
   fun y L =>
     match L with
     | [] => x
@@ -47,26 +59,11 @@ Definition shift {A B : Type} (f : A -> list A -> B) (x : B) : A -> list A -> B 
 Definition test0 (P : list nat) (Ps : list (list nat)) : bool :=
   (is_perm P && negb (is_visited P Ps))%bool.
 
-Definition chosen0 (Ps : list (list nat)) : list bool :=
-  assemble test0 Ps.
-
-Definition score0 (Ps : list (list nat)) : nat :=
-  length (select (chosen0 Ps) Ps).
-
 Definition test1' (P : list nat) (Ps : list (list nat)) : bool :=
   (test0 P Ps && cycle_complete P (P :: Ps))%bool.
 
-Definition chosen1' (Ps : list (list nat)) : list bool :=
-  assemble test1' Ps.
-
 Definition test1 : list nat -> list (list nat) -> bool :=
   shift test1' false.
-
-Definition chosen1 (Ps : list (list nat)) : list bool :=
-  assemble test1 Ps.
-
-Definition score1 (Ps : list (list nat)) : nat :=
-  length (select (chosen1 Ps) Ps).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -165,12 +162,12 @@ Qed.
 
 Lemma chosen0_correct :
   forall Ps : list (list nat),
-    select (chosen0 Ps) Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
+    chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
 Proof.
   intro Ps.
   rewrite nub'_filter.
   induction Ps as [|P Ps IH]; trivial.
-  unfold chosen0, test0, is_visited.
+  unfold chosen, test0, is_visited.
   simpl.
   destruct (in_dec (list_eq_dec eq_nat_dec) P Ps);
     simpl;
@@ -180,24 +177,25 @@ Proof.
 Qed.
 
 Lemma score0_bound :
-  forall (n : nat) (L : list nat), score0 (n_strings n L) <= length L + 1 - n.
+  forall (n : nat) (L : list nat),
+    score test0 (n_strings n L) <= length L + 1 - n.
 Proof.
   intros n L.
-  unfold score0.
+  unfold score, chosen, test0.
   rewrite select_length, n_strings_length.
   trivial.
 Qed.
 
 Lemma score0_final :
   forall (n : nat) (L : list nat),
-    all_perms n L -> score0 (n_strings n L) = fact n.
+    all_perms n L -> score test0 (n_strings n L) = fact n.
 Proof.
   intros n L H.
   assert (length (permutations (seq 0 n)) = fact n) as F.
     rewrite permutations_length.
     apply f_equal, seq_length.
   rewrite <- F.
-  unfold score0.
+  unfold score.
   rewrite chosen0_correct.
   apply Permutation_length, NoDup_Permutation.
   - apply NoDup_nub'.
@@ -215,7 +213,7 @@ Lemma chosen1'_complete :
     n >= 1 ->
     Permutation (seq 0 n) Q ->
     incl (rotations Q) Ps ->
-      exists k : nat, In (rotate k Q) (select (chosen1' Ps) Ps).
+      exists k : nat, In (rotate k Q) (chosen test1' Ps).
 Proof.
   intros n Ps Q Hn H1 H2.
   assert (length Q > 0) as NZ by (apply Permutation_length in H1; rewrite seq_length in H1; omega).
@@ -226,7 +224,7 @@ Proof.
       trivial.
     + apply in_nil in H.
       tauto.
-  - unfold chosen1'.
+  - unfold chosen.
     simpl.
     destruct (test1' P Ps) eqn:E.
     + destruct (in_dec (list_eq_dec eq_nat_dec) P (rotations Q)) as [I|NI].
