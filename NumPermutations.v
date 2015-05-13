@@ -2,6 +2,7 @@ Require Import Omega.
 Require Import List.
 Require Import Permutation.
 Require Import ListTheorems.
+Require Euclid.
 Import ListNotations.
 
 Definition rotate1 {A : Type} (L : list A) : list A :=
@@ -299,4 +300,40 @@ Proof.
     apply permutations_correct, Permutation_length in HP.
     rewrite HP.
     trivial.
+Qed.
+
+Lemma rotate_mult :
+  forall (A : Type) (k : nat) (L : list A), rotate (k * length L) L = L.
+Proof.
+  intros A k L.
+  induction k as [|k IH]; trivial.
+  simpl.
+  rewrite <- rotate_plus, rotate_full.
+  trivial.
+Qed.
+
+Lemma in_rotations :
+  forall (A : Type) (L M : list A), length M > 0 ->
+    (In L (rotations M) <-> exists k, L = rotate k M).
+Proof.
+  intros A L M NZ.
+  split.
+  - unfold rotations.
+    rewrite in_map_iff.
+    intros [x [H _]].
+    exists x.
+    auto.
+  - intros [x H].
+    subst L.
+    apply in_map_iff.
+    destruct (Euclid.modulo (length M) NZ x) as [y [z [H1 H2]]].
+    destruct y as [|y IH].
+    + exists (length M).
+      subst x.
+      rewrite rotate_full, <- rotate_plus, rotate_mult, in_seq.
+      auto with *.
+    + exists (S y).
+      subst x.
+      rewrite <- rotate_plus, rotate_mult, in_seq.
+      auto with *.
 Qed.

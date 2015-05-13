@@ -56,6 +56,9 @@ Definition score0 (Ps : list (list nat)) : nat :=
 Definition test1' (P : list nat) (Ps : list (list nat)) : bool :=
   (test0 P Ps && cycle_complete P (P :: Ps))%bool.
 
+Definition chosen1' (Ps : list (list nat)) : list bool :=
+  assemble test1' Ps.
+
 Definition test1 : list nat -> list (list nat) -> bool :=
   shift test1' false.
 
@@ -72,6 +75,14 @@ Proof.
   discriminate.
 Qed.
 
+Lemma Permutation_seq_length :
+  forall (n : nat) (P : list nat), Permutation (seq 0 n) P -> n = length P.
+Proof.
+  intros n P H.
+  rewrite <- (seq_length n 0).
+  apply Permutation_length, H.
+Qed.
+
 Lemma Permutation_is_perm :
   forall (n : nat) (P : list nat), Permutation (seq 0 n) P <-> length P = n /\ is_perm P = true.
 Proof.
@@ -80,9 +91,7 @@ Proof.
   rewrite to_bool_iff.
   split.
   - intro H.
-    pose (Permutation_length H) as HL.
-    rewrite seq_length in HL.
-    subst n.
+    replace (length P) with n by apply Permutation_seq_length, H.
     tauto.
   - intros [E H].
     subst n.
@@ -199,6 +208,70 @@ Proof.
     specialize (H P).
     rewrite Permutation_is_perm in H.
     tauto.
+Qed.
+
+Lemma chosen1'_complete :
+  forall (n : nat) (Ps : list (list nat)) (Q : list nat),
+    n >= 1 ->
+    Permutation (seq 0 n) Q ->
+    incl (rotations Q) Ps ->
+      exists k : nat, In (rotate k Q) (select (chosen1' Ps) Ps).
+Proof.
+  intros n Ps Q Hn H1 H2.
+  assert (length Q > 0) as NZ by (apply Permutation_length in H1; rewrite seq_length in H1; omega).
+  induction Ps as [|P Ps IH].
+  - assert (In Q []) as H.
+    + apply H2, in_rotations; trivial.
+      exists 0.
+      trivial.
+    + apply in_nil in H.
+      tauto.
+  - unfold chosen1'.
+    simpl.
+    destruct (test1' P Ps) eqn:E.
+    + destruct (in_dec (list_eq_dec eq_nat_dec) P (rotations Q)) as [I|NI].
+      * unfold rotations in I.
+        rewrite in_map_iff in I.
+        destruct I as [k [I _]].
+        exists k.
+        simpl.
+        auto.
+      * apply incl_drop in H2; trivial.
+        specialize (IH H2).
+        destruct IH as [k IH].
+        exists k.
+        simpl.
+        tauto.
+    + apply IH.
+      intros R HR.
+      pose (H2 R HR) as I.
+      destruct I as [E2|I]; trivial.
+      subst R.
+      unfold rotations in HR.
+      rewrite in_map_iff in HR.
+      destruct HR as [k [HR _]].
+      subst P.
+      unfold test1', test0, is_perm, is_visited, cycle_complete in E.
+      repeat rewrite Bool.andb_false_iff in E.
+      rewrite Bool.negb_false_iff in E.
+      repeat rewrite <- Bool.not_true_iff_false in E.
+      repeat rewrite to_bool_iff in E.
+      repeat rewrite rotate_length in E.
+      replace (length Q) with n in E by apply Permutation_seq_length, H1.
+      destruct E as [[E|E]|E].
+      * contradict E.
+        rewrite H1, Permutation_rotate.
+        trivial.
+      * trivial.
+      * contradict E.
+        intros R HR.
+        apply H2.
+        revert HR.
+        repeat rewrite in_rotations by (try rewrite rotate_length; trivial).
+        intros [m H].
+        rewrite rotate_plus in H.
+        exists (k + m).
+        trivial.
 Qed.
 
 Theorem bound0 :

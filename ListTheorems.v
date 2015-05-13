@@ -171,6 +171,17 @@ Proof.
   - tauto.
 Qed.
 
+Lemma incl_drop :
+  forall (A : Type) (L M : list A) (x : A), incl L (x :: M) -> ~ In x L -> incl L M.
+Proof.
+  intros A L M x H1 H2 y Hy.
+  specialize (H1 y Hy).
+  destruct H1 as [H1|H1].
+  - subst y.
+    tauto.
+  - trivial.
+Qed.
+
 Lemma in_nub' :
   forall (A : Type) eq_dec (L : list A) (x : A), In x (nub' eq_dec L) <-> In x L.
 Proof.
