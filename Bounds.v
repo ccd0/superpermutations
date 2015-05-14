@@ -11,6 +11,9 @@ Definition substring {A : Type} (L M : list A) : Prop :=
 Definition all_perms (n : nat) (L : list nat) : Prop :=
   forall P, Permutation (seq 0 n) P -> substring P L.
 
+Definition all_perms' (n : nat) (Ps : list (list nat)) : Prop :=
+  forall P, Permutation (seq 0 n) P -> In P Ps.
+
 Fixpoint n_strings (n : nat) (L : list nat) : list (list nat) :=
   if le_dec n (length L) then
     match L with
@@ -208,7 +211,7 @@ Proof.
     tauto.
 Qed.
 
-Lemma chosen1'_complete :
+Lemma chosen1'_complete1 :
   forall (n : nat) (Ps : list (list nat)) (Q : list nat),
     n >= 1 ->
     Permutation (seq 0 n) Q ->
@@ -270,6 +273,33 @@ Proof.
         rewrite rotate_plus in H.
         exists (k + m).
         trivial.
+Qed.
+
+Lemma chosen1'_complete2 :
+  forall (n : nat) (Ps : list (list nat)),
+    n >= 1 ->
+    all_perms' n Ps ->
+      all_perms' n (flat_map rotations (chosen test1' Ps)).
+Proof.
+  intros n Ps Hn HPs Q HQ.
+  apply in_flat_map.
+  assert (exists k : nat, In (rotate k Q) (chosen test1' Ps)) as [k I].
+  - apply (chosen1'_complete1 n); trivial.
+    intros R HR.
+    apply HPs.
+    apply Permutation_rotations in HR.
+    rewrite HR.
+    trivial.
+  - exists (rotate k Q).
+    split; trivial.
+    rewrite rotations_rotate.
+    apply (Permutation_in (l := rotations Q)).
+    + symmetry.
+      apply Permutation_rotate.
+    + apply rotations_self.
+      apply Permutation_length in HQ.
+      rewrite <- HQ, seq_length.
+      trivial.
 Qed.
 
 Theorem bound0 :

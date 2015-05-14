@@ -182,6 +182,19 @@ Proof.
   - trivial.
 Qed.
 
+Lemma seq_app :
+  forall k m n : nat, seq k m ++ seq (k + m) n = seq k (m + n).
+Proof.
+  intros k m n.
+  revert k.
+  induction m as [|m IH]; intro k.
+  - replace (k + 0) with k; trivial.
+  - simpl.
+    replace (k + S m) with (S k + m) by omega.
+    rewrite IH.
+    trivial.
+Qed.
+
 Lemma in_nub' :
   forall (A : Type) eq_dec (L : list A) (x : A), In x (nub' eq_dec L) <-> In x L.
 Proof.

@@ -26,6 +26,17 @@ Fixpoint permutations {A : Type} (L : list A) : list (list A) :=
   | x :: M => flat_map rotations (map (cons x) (permutations M))
   end.
 
+Lemma rotate1_length :
+  forall (A : Type) (L : list A), length (rotate1 L) = length L.
+Proof.
+  intros A L.
+  induction L as [|x L IHL]; trivial.
+  simpl.
+  rewrite app_length.
+  simpl.
+  omega.
+Qed.
+
 Lemma rotate_length :
   forall (A : Type) (k : nat) (L : list A), length (rotate k L) = length L.
 Proof.
@@ -34,11 +45,7 @@ Proof.
   intro L.
   simpl.
   rewrite (IH (rotate1 L)).
-  induction L as [|x L IHL]; trivial.
-  simpl.
-  rewrite app_length.
-  simpl.
-  omega.
+  apply rotate1_length.
 Qed.
 
 Lemma rotate_full :
@@ -336,4 +343,84 @@ Proof.
       subst x.
       rewrite <- rotate_plus, rotate_mult, in_seq.
       auto with *.
+Qed.
+
+Lemma Permutation_rotations :
+  forall (A : Type) (L M : list A), In L (rotations M) -> Permutation L M.
+Proof.
+  intros A L M H.
+  unfold rotations in H.
+  rewrite in_map_iff in H.
+  destruct H as [x [H _]].
+  subst L.
+  apply Permutation_rotate.
+Qed.
+
+Lemma rotate1_map :
+  forall (A B : Type) (f : A -> B) (L : list A),
+    rotate1 (map f L) = map f (rotate1 L).
+Proof.
+  intros A B f L.
+  induction L as [|x L IH]; trivial.
+  simpl.
+  rewrite map_app.
+  trivial.
+Qed.
+
+Lemma rotate_map :
+  forall (A B : Type) (k : nat) (f : A -> B) (L : list A),
+    rotate k (map f L) = map f (rotate k L).
+Proof.
+  intros A B k f L.
+  induction k as [|k IH]; trivial.
+  replace (S k) with (k + 1) by omega.
+  repeat rewrite <- rotate_plus.
+  rewrite IH.
+  apply rotate1_map.
+Qed.
+
+Lemma rotations_rotate1 :
+  forall (A : Type) (L : list A),
+    rotations (rotate1 L) = rotate1 (rotations L).
+Proof.
+  intros A L.
+  unfold rotations.
+  rewrite rotate1_length.
+  set (n := length L).
+  assert (n = length L) as E by trivial.
+  rewrite <- (map_map S (fun k => rotate k L)).
+  rewrite seq_shift.
+  destruct n as [|n]; trivial.
+  replace (seq 2 (S n)) with (seq 2 n ++ [2 + n]) by (
+    replace (S n) with (n + 1) by omega;
+    rewrite <- seq_app;
+    trivial
+  ).
+  rewrite map_app.
+  simpl.
+  apply (f_equal (fun x => map _ _ ++ [x])).
+  change (rotate (S n) (rotate1 L) = rotate1 L).
+  rewrite E, <- rotate1_length.
+  apply rotate_full.
+Qed.
+
+Lemma rotations_rotate :
+  forall (A : Type) (k : nat) (L : list A),
+    rotations (rotate k L) = rotate k (rotations L).
+Proof.
+  intros A k.
+  induction k as [|k IH]; trivial.
+  intro L.
+  simpl.
+  rewrite <- rotations_rotate1, IH.
+  trivial.
+Qed.
+
+Lemma rotations_self :
+  forall (A : Type) (L : list A), length L > 0 -> In L (rotations L).
+Proof.
+  intros A L H.
+  apply in_rotations; trivial.
+  exists 0.
+  trivial.
 Qed.
