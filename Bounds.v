@@ -1,3 +1,4 @@
+Require Import Bool.
 Require Import Omega.
 Require Import List.
 Require Import Permutation.
@@ -60,10 +61,10 @@ Definition shift {A B : Type} (f : genFun A B) (x : B) : genFun A B :=
     end.
 
 Definition test0 (P : list nat) (Ps : list (list nat)) : bool :=
-  (is_perm P && negb (is_visited P Ps))%bool.
+  is_perm P && negb (is_visited P Ps).
 
 Definition test1' (P : list nat) (Ps : list (list nat)) : bool :=
-  (test0 P Ps && cycle_complete P (P :: Ps))%bool.
+  test0 P Ps && cycle_complete P (P :: Ps).
 
 Definition test1 : list nat -> list (list nat) -> bool :=
   shift test1' false.
@@ -253,7 +254,7 @@ Proof.
   apply chosen_imp_incl.
   unfold test1'.
   intros Q Qs.
-  rewrite Bool.andb_true_iff.
+  rewrite andb_true_iff.
   tauto.
 Qed.
 
@@ -299,9 +300,9 @@ Proof.
       destruct HR as [k [HR _]].
       subst P.
       unfold test1', test0, is_perm, is_visited, cycle_complete in E.
-      repeat rewrite Bool.andb_false_iff in E.
-      rewrite Bool.negb_false_iff in E.
-      repeat rewrite <- Bool.not_true_iff_false in E.
+      repeat rewrite andb_false_iff in E.
+      rewrite negb_false_iff in E.
+      repeat rewrite <- not_true_iff_false in E.
       repeat rewrite to_bool_iff in E.
       repeat rewrite rotate_length in E.
       replace (length Q) with n in E by apply Permutation_seq_length, H1.
@@ -338,14 +339,10 @@ Proof.
     trivial.
   - exists (rotate k Q).
     split; trivial.
-    rewrite rotations_rotate.
-    apply (Permutation_in (l := rotations Q)).
-    + symmetry.
-      apply Permutation_rotate.
-    + apply rotations_self.
-      apply Permutation_length in HQ.
-      rewrite <- HQ, seq_length.
-      trivial.
+    apply in_rotations_rotate.
+    apply Permutation_length in HQ.
+    rewrite <- HQ, seq_length.
+    trivial.
 Qed.
 
 Lemma score1'_final :
@@ -372,6 +369,53 @@ Proof.
     rewrite rotations_length, seq_length.
     apply chosen_incl, n_strings_correct in HQ.
     tauto.
+Qed.
+
+Lemma forced_rotate :
+  forall (A : Type) (x y : A) (L : list A),
+    Permutation (x :: L) (L ++ [y]) -> x = y.
+Proof.
+  intros A x y L H.
+  rewrite <- Permutation_cons_append in H.
+  change (Permutation ([x] ++ L) ([y] ++ L)) in H.
+  apply Permutation_app_inv_r, Permutation_length_1 in H.
+  trivial.
+Qed.
+
+Lemma test0_test1 :
+  forall (x y : nat) (L : list nat) (Rs : list (list nat)),
+    test0 (x :: L) ((L ++ [y]) :: Rs) = false \/ test1 (x :: L) ((L ++ [y]) :: Rs) = false.
+Proof.
+  intros x y L Rs.
+  set (P := x :: L).
+  set (Q := L ++ [y]).
+  destruct (test0 P (Q :: Rs)) eqn:H; [|tauto].
+  destruct (test1 P (Q :: Rs)) eqn:K; [|tauto].
+  unfold test0, is_perm, is_visited in H.
+  rewrite andb_true_iff, negb_true_iff, <- not_true_iff_false in H.
+  repeat rewrite to_bool_iff in H.
+  destruct H as [H1 H2].
+  unfold test1, shift, test1', test0, is_perm, cycle_complete in K.
+  repeat rewrite andb_true_iff in K.
+  repeat rewrite to_bool_iff in K.
+  destruct K as [[K1 _] K2].
+  set (n := length P) in *.
+  assert (n = length Q) as E by (
+    subst n P Q;
+    rewrite app_length;
+    simpl;
+    omega
+  ).
+  rewrite <- E in K1.
+  rewrite H1 in K1.
+  apply forced_rotate in K1.
+  contradict H2.
+  apply K2.
+  subst P Q y.
+  change (In (x :: L) (rotations (rotate 1 (x :: L)))).
+  apply in_rotations_rotate.
+  simpl.
+  omega.
 Qed.
 
 Theorem bound0 :

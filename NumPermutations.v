@@ -433,3 +433,15 @@ Proof.
   rewrite map_length, seq_length.
   trivial.
 Qed.
+
+Lemma in_rotations_rotate :
+  forall (A : Type) (k : nat) (L : list A), length L > 0 -> In L (rotations (rotate k L)).
+Proof.
+  intros A k L NZ.
+  rewrite rotations_rotate.
+  apply (Permutation_in (l := rotations L)).
+  + symmetry.
+    apply Permutation_rotate.
+  + apply rotations_self.
+    trivial.
+Qed.
