@@ -163,6 +163,41 @@ Proof.
   - destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
 Qed.
 
+Lemma n_strings_all_perms :
+  forall (n : nat) (L : list nat), all_perms n L -> all_perms' n (n_strings n L).
+Proof.
+  intros n L HL P HP.
+  apply n_strings_correct.
+  split; [auto|].
+  apply Permutation_length in HP.
+  rewrite seq_length in HP.
+  auto.
+Qed.
+
+Lemma chosen_incl :
+  forall (A : Type) (f : testFun A) (Ps : list A),
+    incl (chosen f Ps) Ps.
+Proof.
+  intros.
+  apply select_incl.
+Qed.
+
+Lemma chosen_imp_incl :
+  forall (A : Type) (f g : testFun A) (Ps : list A),
+    (forall Q Qs, f Q Qs = true -> g Q Qs = true) ->
+      incl (chosen f Ps) (chosen g Ps).
+Proof.
+  intros A f g Ps H Q.
+  induction Ps as [|P Ps IH]; trivial.
+  unfold chosen.
+  simpl.
+  repeat rewrite select_cons, in_app_iff.
+  intros [H2|H2]; [|tauto].
+  destruct (f P Ps) eqn:E; [|contradict H2].
+  apply H in E.
+  destruct (g P Ps); [tauto|discriminate].
+Qed.
+
 Lemma chosen0_correct :
   forall Ps : list (list nat),
     chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
@@ -209,6 +244,17 @@ Proof.
     specialize (H P).
     rewrite Permutation_is_perm in H.
     tauto.
+Qed.
+
+Lemma chosen0_chosen1' :
+  forall Ps : list (list nat), incl (chosen test1' Ps) (chosen test0 Ps).
+Proof.
+  intro Ps.
+  apply chosen_imp_incl.
+  unfold test1'.
+  intros Q Qs.
+  rewrite Bool.andb_true_iff.
+  tauto.
 Qed.
 
 Lemma chosen1'_complete1 :
@@ -300,6 +346,32 @@ Proof.
       apply Permutation_length in HQ.
       rewrite <- HQ, seq_length.
       trivial.
+Qed.
+
+Lemma score1'_final :
+  forall (n : nat) (L : list nat),
+    n >= 1 -> all_perms n L -> score test1' (n_strings n L) >= fact (n - 1).
+Proof.
+  intros n L Hn HL.
+  set (Ps := n_strings n L).
+  apply (mult_S_le_reg_l (n - 1)).
+  change (fact (S (n - 1)) <= S (n - 1) * score test1' Ps).
+  replace (S (n - 1)) with n by omega.
+  rewrite <- (seq_length n 0).
+  rewrite <- permutations_length.
+  unfold score.
+  rewrite <- (flat_map_length _ _ rotations).
+  - apply NoDup_incl_lel.
+    + apply NoDup_permutations, NoDup_seq.
+    + intro Q.
+      rewrite permutations_correct.
+      apply chosen1'_complete2; trivial.
+      apply n_strings_all_perms.
+      trivial.
+  - intros Q HQ.
+    rewrite rotations_length, seq_length.
+    apply chosen_incl, n_strings_correct in HQ.
+    tauto.
 Qed.
 
 Theorem bound0 :

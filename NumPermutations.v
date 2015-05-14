@@ -424,3 +424,12 @@ Proof.
   exists 0.
   trivial.
 Qed.
+
+Lemma rotations_length :
+  forall (A : Type) (L : list A), length (rotations L) = length L.
+Proof.
+  intros A L.
+  unfold rotations.
+  rewrite map_length, seq_length.
+  trivial.
+Qed.

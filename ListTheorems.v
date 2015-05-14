@@ -182,6 +182,46 @@ Proof.
   - trivial.
 Qed.
 
+Lemma incl_cons_iff :
+  forall (A : Type) (x : A) (L M : list A),
+    incl (x :: L) M <-> In x M /\ incl L M.
+Proof.
+  unfold incl.
+  simpl.
+  intuition.
+  subst.
+  trivial.
+Qed.
+
+Lemma NoDup_incl_lel :
+  forall (A : Type) (L M : list A), NoDup L -> incl L M -> length L <= length M.
+Proof.
+  intros A L M HI.
+  revert M.
+  induction L as [|x L IH]; [auto with *|].
+  intros M HM.
+  rewrite incl_cons_iff in HM.
+  destruct HM as [Hx HL].
+  apply in_split in Hx.
+  destruct Hx as [P [Q HM]].
+  subst M.
+  rewrite app_length.
+  simpl.
+  rewrite <- plus_n_Sm, <- app_length.
+  apply le_n_S.
+  apply IH.
+  - inversion HI.
+    trivial.
+  - intros y Hy.
+    specialize (HL y Hy).
+    revert HL.
+    repeat rewrite in_app_iff.
+    intros [H|[H|H]]; try tauto.
+    subst y.
+    inversion HI.
+    tauto.
+Qed.
+
 Lemma seq_app :
   forall k m n : nat, seq k m ++ seq (k + m) n = seq k (m + n).
 Proof.
@@ -262,6 +302,30 @@ Proof.
   unfold select.
   rewrite map_length, filter_length, combine_length.
   auto with *.
+Qed.
+
+Lemma select_cons :
+  forall (A : Type) (x : bool) (L : list bool) (y : A) (M : list A),
+    select (x :: L) (y :: M) = (if x then [y] else []) ++ select L M.
+Proof.
+  intros A x L y M.
+  destruct x; trivial.
+Qed.
+
+Lemma select_incl :
+  forall (A : Type) (L : list bool) (M : list A),
+    incl (select L M) M.
+Proof.
+  intros A L M x.
+  unfold select.
+  rewrite in_map_iff.
+  intros [[y z] [E H]].
+  rewrite filter_In in H.
+  simpl in E.
+  subst z.
+  destruct H as [H _].
+  revert H.
+  apply in_combine_r.
 Qed.
 
 Definition search
