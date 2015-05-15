@@ -76,6 +76,14 @@ Proof.
   discriminate.
 Qed.
 
+Lemma permutations_seq_length :
+  forall n : nat, length (permutations (seq 0 n)) = fact n.
+Proof.
+  intro n.
+  rewrite permutations_length, seq_length.
+  trivial.
+Qed.
+
 Lemma Permutation_seq_length :
   forall (n : nat) (P : list nat), Permutation (seq 0 n) P -> n = length P.
 Proof.
@@ -233,12 +241,8 @@ Lemma score0_final :
     all_perms n L -> score test0 (n_strings n L) = fact n.
 Proof.
   intros n L H.
-  assert (length (permutations (seq 0 n)) = fact n) as F.
-    rewrite permutations_length.
-    apply f_equal, seq_length.
-  rewrite <- F.
   unfold score.
-  rewrite chosen0_correct.
+  rewrite <- permutations_seq_length, chosen0_correct.
   apply Permutation_length, NoDup_Permutation.
   - apply NoDup_nub'.
   - apply NoDup_permutations, NoDup_seq.
@@ -269,14 +273,11 @@ Lemma chosen1'_complete1 :
       exists k : nat, In (rotate k Q) (chosen test1' Ps).
 Proof.
   intros n Ps Q Hn H1 H2.
-  assert (length Q > 0) as NZ by (apply Permutation_length in H1; rewrite seq_length in H1; omega).
+  assert (length Q > 0) as NZ by (apply Permutation_seq_length in H1; omega).
   induction Ps as [|P Ps IH].
-  - assert (In Q []) as H.
-    + apply H2, in_rotations; trivial.
-      exists 0.
-      trivial.
-    + apply in_nil in H.
-      tauto.
+  - assert (~ In Q []) as H by apply in_nil.
+    contradict H.
+    apply H2, rotations_self, NZ.
   - unfold chosen.
     simpl.
     destruct (test1' P Ps) eqn:E.
@@ -315,14 +316,11 @@ Proof.
         trivial.
       * trivial.
       * contradict E.
-        intros R HR.
-        apply H2.
-        revert HR.
-        repeat rewrite in_rotations by (try rewrite rotate_length; trivial).
-        intros [m H].
-        rewrite rotate_plus in H.
-        exists (k + m).
-        trivial.
+        revert H2.
+        apply incl_tran.
+        rewrite rotations_rotate.
+        intro R.
+        apply Permutation_in, Permutation_rotate.
 Qed.
 
 Lemma chosen1'_complete2 :
@@ -343,9 +341,8 @@ Proof.
   - exists (rotate k Q).
     split; trivial.
     apply in_rotations_rotate.
-    apply Permutation_length in HQ.
-    rewrite <- HQ, seq_length.
-    trivial.
+    apply Permutation_seq_length in HQ.
+    omega.
 Qed.
 
 Lemma score1'_final :
@@ -357,8 +354,7 @@ Proof.
   apply (mult_S_le_reg_l (n - 1)).
   change (fact (S (n - 1)) <= S (n - 1) * score test1' Ps).
   replace (S (n - 1)) with n by omega.
-  rewrite <- (seq_length n 0).
-  rewrite <- permutations_length.
+  rewrite <- permutations_seq_length.
   unfold score.
   rewrite <- (flat_map_length _ _ rotations).
   - apply NoDup_incl_lel.
@@ -369,7 +365,7 @@ Proof.
       apply n_strings_all_perms.
       trivial.
   - intros Q HQ.
-    rewrite rotations_length, seq_length.
+    rewrite rotations_length.
     apply chosen_incl, n_strings_correct in HQ.
     tauto.
 Qed.
