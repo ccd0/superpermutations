@@ -320,17 +320,20 @@ Proof.
 Qed.
 
 Lemma in_rotations :
-  forall (A : Type) (L M : list A), length M > 0 ->
-    (In L (rotations M) <-> exists k, L = rotate k M).
+  forall (A : Type) (L M : list A),
+    (In L (rotations M) <-> length M > 0 /\ exists k, L = rotate k M).
 Proof.
-  intros A L M NZ.
+  intros A L M.
   split.
   - unfold rotations.
     rewrite in_map_iff.
-    intros [x [H _]].
-    exists x.
-    auto.
-  - intros [x H].
+    intros [x [H1 H2]].
+    split.
+    + revert H2.
+      destruct M; simpl; auto with *.
+    + exists x.
+      auto.
+  - intros [NZ [x H]].
     subst L.
     apply in_map_iff.
     destruct (Euclid.modulo (length M) NZ x) as [y [z [H1 H2]]].
@@ -420,7 +423,8 @@ Lemma rotations_self :
   forall (A : Type) (L : list A), length L > 0 -> In L (rotations L).
 Proof.
   intros A L H.
-  apply in_rotations; trivial.
+  apply in_rotations.
+  split; trivial.
   exists 0.
   trivial.
 Qed.
