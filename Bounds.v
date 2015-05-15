@@ -99,22 +99,25 @@ Proof.
     trivial.
 Qed.
 
+Lemma n_strings_correct1 :
+  forall (n : nat) (L P : list nat),
+    ~ n <= length L -> (False <-> substring P L /\ length P = n).
+Proof.
+  intros n L P H.
+  split; [tauto|].
+  intros [[LH [LT H1]] E].
+  apply (f_equal (@length nat)) in H1.
+  repeat rewrite app_length in H1.
+  omega.
+Qed.
+
 Lemma n_strings_correct :
   forall (n : nat) (L P : list nat),
     In P (n_strings n L) <-> substring P L /\ length P = n.
 Proof.
   intros n L P.
-  assert (
-    forall L', ~ n <= length L' -> (False <-> substring P L' /\ length P = n)
-  ) as B.
-    intros L' Len.
-    split; [tauto|].
-    intros [[LH [LT H1]] E].
-    apply (f_equal (@length nat)) in H1.
-    repeat rewrite app_length in H1.
-    omega.
   induction L as [|x L IH]; simpl.
-  - destruct (le_dec n 0) as [Len|Len]; [|apply (B []); trivial].
+  - destruct (le_dec n 0) as [Len|Len]; [|apply n_strings_correct1; trivial].
     simpl.
     split.
     + intros [E|F]; [|tauto].
@@ -126,7 +129,7 @@ Proof.
     + destruct P; auto with *.
       simpl in *.
       omega.
-  - destruct (le_dec n (S (length L))) as [Len|Len]; [|apply B; trivial].
+  - destruct (le_dec n (S (length L))) as [Len|Len]; [|apply n_strings_correct1; trivial].
     simpl.
     rewrite IH.
     split.
