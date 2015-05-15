@@ -76,6 +76,19 @@ Proof.
   discriminate.
 Qed.
 
+Lemma to_bool_false_iff :
+  forall (P : Prop) (x : {P} + {~ P}), to_bool x = false <-> ~ P.
+Proof.
+  intuition.
+Qed.
+
+Hint Rewrite
+  andb_true_iff andb_false_iff
+  orb_true_iff  orb_false_iff
+  negb_true_iff negb_false_iff
+  to_bool_iff   to_bool_false_iff
+  : bool_to_Prop.
+
 Lemma permutations_seq_length :
   forall n : nat, length (permutations (seq 0 n)) = fact n.
 Proof.
@@ -302,10 +315,7 @@ Proof.
       destruct HR as [_ [k HR]].
       subst P.
       unfold test1', test0, is_perm, is_visited, cycle_complete in E.
-      repeat rewrite andb_false_iff in E.
-      rewrite negb_false_iff in E.
-      repeat rewrite <- not_true_iff_false in E.
-      repeat rewrite to_bool_iff in E.
+      autorewrite with bool_to_Prop in E.
       repeat rewrite rotate_length in E.
       replace (length Q) with n in E by apply Permutation_seq_length, H1.
       destruct E as [[E|E]|E].
@@ -388,13 +398,9 @@ Proof.
   set (Q := L ++ [y]).
   destruct (test0 P (Q :: Rs)) eqn:H; [|tauto].
   destruct (test1 P (Q :: Rs)) eqn:K; [|tauto].
-  unfold test0, is_perm, is_visited in H.
-  rewrite andb_true_iff, negb_true_iff, <- not_true_iff_false in H.
-  repeat rewrite to_bool_iff in H.
+  unfold test1, shift, test1', test0, is_perm, is_visited, cycle_complete in H, K.
+  autorewrite with bool_to_Prop in H, K.
   destruct H as [H1 H2].
-  unfold test1, shift, test1', test0, is_perm, cycle_complete in K.
-  repeat rewrite andb_true_iff in K.
-  repeat rewrite to_bool_iff in K.
   destruct K as [[K1 _] K2].
   set (n := length P) in *.
   assert (n = length Q) as E by (
