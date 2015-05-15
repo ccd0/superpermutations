@@ -282,9 +282,8 @@ Proof.
     simpl.
     destruct (test1' P Ps) eqn:E.
     + destruct (in_dec (list_eq_dec eq_nat_dec) P (rotations Q)) as [I|NI].
-      * unfold rotations in I.
-        rewrite in_map_iff in I.
-        destruct I as [k [I _]].
+      * rewrite in_rotations in I.
+        destruct I as [_ [k I]].
         exists k.
         simpl.
         auto.
@@ -299,9 +298,8 @@ Proof.
       pose (H2 R HR) as I.
       destruct I as [E2|I]; trivial.
       subst R.
-      unfold rotations in HR.
-      rewrite in_map_iff in HR.
-      destruct HR as [k [HR _]].
+      rewrite in_rotations in HR.
+      destruct HR as [_ [k HR]].
       subst P.
       unfold test1', test0, is_perm, is_visited, cycle_complete in E.
       repeat rewrite andb_false_iff in E.
