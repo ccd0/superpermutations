@@ -60,6 +60,12 @@ Definition shift {A B : Type} (f : genFun A B) (x : B) : genFun A B :=
     | z :: M => f z M
     end.
 
+Definition ort {A : Type} (f g : testFun A) : testFun A :=
+  fun x L => f x L || g x L.
+
+Definition andt {A : Type} (f g : testFun A) : testFun A :=
+  fun x L => f x L && g x L.
+
 Definition test0 (P : list nat) (Ps : list (list nat)) : bool :=
   is_perm P && negb (is_visited P Ps).
 
@@ -221,6 +227,27 @@ Proof.
   destruct (f P Ps) eqn:E; [|contradict H2].
   apply H in E.
   destruct (g P Ps); [tauto|discriminate].
+Qed.
+
+Lemma score_cons :
+  forall (A : Type) (f : testFun A) (P : A) (Ps : list A),
+    score f (P :: Ps) = (if f P Ps then 1 else 0) + score f Ps.
+Proof.
+  intros A f P Ps.
+  unfold score, chosen, assemble.
+  destruct (f P Ps); trivial.
+Qed.
+
+Lemma score_plus :
+  forall (A : Type) (f g : testFun A) (Ps : list A),
+    score (ort f g) Ps + score (andt f g) Ps = score f Ps + score g Ps.
+Proof.
+  intros A f g Ps.
+  induction Ps as [|P Ps IH]; trivial.
+  repeat rewrite score_cons.
+  rewrite plus_permute_2_in_4, IH.
+  unfold ort, andt.
+  destruct (f P Ps), (g P Ps); simpl; auto.
 Qed.
 
 Lemma chosen0_correct :
