@@ -205,6 +205,37 @@ Proof.
   auto.
 Qed.
 
+Lemma n_strings_cases :
+  forall (n : nat) (L : list nat), n >= 1 ->
+    n_strings n L = []
+      \/ (exists P, n_strings n L = [P])
+      \/ (exists x M y Ps, n_strings n L = (x :: M) :: (M ++ [y]) :: Ps).
+Proof.
+  intros n L H.
+  destruct L as [|x L]; simpl.
+  - destruct (le_dec n 0) as [K|K]; [omega|tauto].
+  - destruct (le_dec n (S (length L))) as [K|K]; [|tauto].
+    destruct L as [|y L]; simpl.
+    + destruct (le_dec n 0) as [K2|K2]; [omega|].
+      right.
+      left.
+      exists (firstn n [x]).
+      trivial.
+    + destruct (le_dec n (S (length L))) as [K2|K2].
+      * right.
+        right.
+        destruct n as [|n]; [omega|].
+        exists x, (firstn n (y :: L)), (last (firstn (S n) (y :: L)) x), (n_strings (S n) L).
+        repeat f_equal.
+        rewrite <- (@removelast_firstn _ n) by trivial.
+        rewrite <- app_removelast_last by (simpl; auto with *).
+        trivial.
+      * right.
+        left.
+        exists (firstn n (x :: y :: L)).
+        trivial.
+Qed.
+
 Lemma chosen_incl :
   forall (A : Type) (f : testFun A) (Ps : list A),
     incl (chosen f Ps) Ps.
@@ -416,11 +447,12 @@ Proof.
   trivial.
 Qed.
 
-Lemma test0_test1 :
+Lemma andt_tests01 :
   forall (x y : nat) (L : list nat) (Rs : list (list nat)),
-    test0 (x :: L) ((L ++ [y]) :: Rs) = false \/ test1 (x :: L) ((L ++ [y]) :: Rs) = false.
+    andt test0 test1 (x :: L) ((L ++ [y]) :: Rs) = false.
 Proof.
   intros x y L Rs.
+  unfold andt.
   set (P := x :: L).
   set (Q := L ++ [y]).
   destruct (test0 P (Q :: Rs)) eqn:H; [|tauto].
@@ -446,6 +478,28 @@ Proof.
   apply in_rotations_rotate.
   simpl.
   omega.
+Qed.
+
+Lemma score_andt_tests01 :
+  forall (n : nat) (L : list nat), n >= 1 -> score (andt test0 test1) (n_strings n L) = 0.
+Proof.
+  intros n L Hn.
+  induction L as [|x L IH]; [simpl; destruct (le_dec n 0) as [H|H]; trivial|].
+  destruct (n_strings_cases n (x :: L) Hn) as [E|[[P E]|[y [M [z [Ps E]]]]]]; rewrite E.
+  - trivial.
+  - rewrite score_cons.
+    unfold andt, test1, shift.
+    destruct (test0 P []); trivial.
+  - rewrite score_cons.
+    simpl in E.
+    destruct (le_dec n (S (length L))); [|discriminate].
+    injection E as E1 E2.
+    rewrite <- E1 at 2.
+    rewrite IH.
+    destruct (andt _ _ _ _) eqn:N; [|trivial].
+    contradict N.
+    rewrite andt_tests01.
+    auto.
 Qed.
 
 Theorem bound0 :
