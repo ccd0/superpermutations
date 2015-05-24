@@ -295,6 +295,16 @@ Proof.
   trivial.
 Qed.
 
+Lemma score_bound :
+  forall (n : nat) (f : testFun (list nat)) (L : list nat),
+    score f (n_strings n L) <= length L + 1 - n.
+Proof.
+  intros n f L.
+  unfold score, chosen.
+  rewrite select_length, n_strings_length.
+  trivial.
+Qed.
+
 Lemma chosen0_correct :
   forall Ps : list (list nat),
     chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
@@ -309,16 +319,6 @@ Proof.
     rewrite <- IH;
     destruct (is_perm P);
     trivial.
-Qed.
-
-Lemma score0_bound :
-  forall (n : nat) (L : list nat),
-    score test0 (n_strings n L) <= length L + 1 - n.
-Proof.
-  intros n L.
-  unfold score, chosen, test0.
-  rewrite select_length, n_strings_length.
-  trivial.
 Qed.
 
 Lemma score0_final :
@@ -550,7 +550,23 @@ Theorem bound1 :
 Proof.
   intros n L H.
   rewrite <- (score0_final n L) by trivial.
-  pose (score0_bound n L) as IE.
+  pose (score_bound n test0 L) as IE.
   pose (bound0 n L H) as B0.
   omega.
+Qed.
+
+Theorem bound2 :
+  forall (n : nat) (L : list nat),
+    all_perms n L -> n >= 1 -> length L >= fact n + fact (n - 1) + n - 2.
+Proof.
+  intros n L H Hn.
+  assert (fact n + (fact (n - 1) - 1) <= length L + 1 - n); [|pose (bound0 n L H); omega].
+  apply (le_trans _ (score (ort test0 test1) (n_strings n L))); [|apply score_bound].
+  rewrite (plus_n_O (score _ _)).
+  rewrite <- (score_andt_tests01 n L) by trivial.
+  rewrite score_plus.
+  rewrite (score_andt_tests01 n L) by trivial.
+  apply plus_le_compat.
+  - rewrite score0_final; trivial.
+  - apply score1_final; trivial.
 Qed.
