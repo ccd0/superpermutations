@@ -281,6 +281,20 @@ Proof.
   destruct (f P Ps), (g P Ps); simpl; auto.
 Qed.
 
+Lemma score_shift :
+  forall (A : Type) (f : testFun A) (P : A) (Ps : list A),
+    score (shift f false) (P :: Ps) = score f Ps.
+Proof.
+  intros A f P Ps.
+  revert P.
+  induction Ps as [|Q Qs IH]; trivial.
+  intro P.
+  rewrite score_cons, (score_cons _ f).
+  simpl.
+  f_equal.
+  trivial.
+Qed.
+
 Lemma chosen0_correct :
   forall Ps : list (list nat),
     chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
@@ -434,6 +448,21 @@ Proof.
     rewrite rotations_length.
     apply chosen_incl, n_strings_correct in HQ.
     tauto.
+Qed.
+
+Lemma score1_final :
+  forall (n : nat) (L : list nat),
+    n >= 1 -> all_perms n L -> score test1 (n_strings n L) >= fact (n - 1) - 1.
+Proof.
+  intros n L Hn HL.
+  apply (plus_le_reg_l _ _ 1).
+  rewrite <- le_plus_minus by apply lt_O_fact.
+  apply (le_trans _ (score test1' (n_strings n L))); [apply score1'_final; trivial|].
+  set (Ps := n_strings n L).
+  destruct Ps as [|P Ps]; auto.
+  unfold test1.
+  rewrite score_shift, score_cons.
+  destruct (test1' P Ps); auto.
 Qed.
 
 Lemma forced_rotate :
