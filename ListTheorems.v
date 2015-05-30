@@ -262,6 +262,18 @@ Proof.
     trivial.
 Qed.
 
+Lemma NoDup_nub'_eq :
+  forall (A : Type) eq_dec (L : list A), NoDup L -> L = nub' eq_dec L.
+Proof.
+  intros A eq_dec L H.
+  induction L as [|x L IH]; trivial.
+  simpl.
+  inversion H as [|y M H1 H2 [E1 E2]].
+  subst y M.
+  destruct (in_dec eq_dec x L) as [N|]; [tauto|].
+  rewrite <- IH; trivial.
+Qed.
+
 Lemma nub'_length :
   forall (A : Type) eq_dec (L : list A), length (nub' eq_dec L) <= length L.
 Proof.
@@ -349,6 +361,21 @@ Proof.
         trivial.
       * right.
         firstorder.
+Defined.
+
+Definition NoDup_dec
+  {A : Type}
+  (eq_dec : forall x y : A, {x = y} + {x <> y})
+  (L : list A) :
+    {NoDup L} + {~ NoDup L}.
+Proof.
+  destruct (list_eq_dec eq_dec L (nub' eq_dec L)) as [Y|N].
+  - left.
+    rewrite Y.
+    apply NoDup_nub'.
+  - right.
+    contradict N.
+    apply NoDup_nub'_eq, N.
 Defined.
 
 Definition Permutation_dec
