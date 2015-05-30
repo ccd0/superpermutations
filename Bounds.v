@@ -229,35 +229,24 @@ Proof.
   auto.
 Qed.
 
-Lemma n_strings_cases :
-  forall (n : nat) (L : list nat), n >= 1 ->
-    n_strings n L = []
-      \/ (exists P, n_strings n L = [P])
-      \/ (exists x M y Ps, n_strings n L = (x :: M) :: (M ++ [y]) :: Ps).
+Lemma n_strings_legal :
+  forall (n : nat) (L : list nat), n >= 1 -> legal (n_strings n L).
 Proof.
   intros n L H.
-  destruct L as [|x L]; simpl.
-  - destruct (le_dec n 0) as [K|K]; [omega|tauto].
-  - destruct (le_dec n (S (length L))) as [K|K]; [|tauto].
+  induction L as [|x L IH]; simpl.
+  - destruct (le_dec n 0) as [K|K]; [omega|apply I].
+  - destruct (le_dec n (S (length L))) as [K|K]; [|apply I].
     destruct L as [|y L]; simpl.
-    + destruct (le_dec n 0) as [K2|K2]; [omega|].
-      right.
-      left.
-      exists (firstn n [x]).
-      trivial.
-    + destruct (le_dec n (S (length L))) as [K2|K2].
-      * right.
-        right.
-        destruct n as [|n]; [omega|].
-        exists x, (firstn n (y :: L)), (last (firstn (S n) (y :: L)) x), (n_strings (S n) L).
-        repeat f_equal.
-        rewrite <- (@removelast_firstn _ n) by trivial.
-        rewrite <- app_removelast_last by (simpl; auto with *).
-        trivial.
-      * right.
-        left.
-        exists (firstn n (x :: y :: L)).
-        trivial.
+    + destruct (le_dec n 0) as [K2|K2]; [omega|trivial].
+    + simpl in IH.
+      destruct (le_dec n (S (length L))) as [K2|K2]; [|trivial].
+      split; [|trivial].
+      exists x, (last (firstn n (y :: L)) 0), (removelast (firstn n (y :: L))).
+      destruct n as [|n]; [omega|].
+      split.
+      * rewrite removelast_firstn; trivial.
+      * apply app_removelast_last.
+        discriminate.
 Qed.
 
 Lemma chosen_incl :
@@ -557,22 +546,20 @@ Lemma score_andt_tests01 :
   forall (n : nat) (L : list nat), n >= 1 -> score (andt test0 test1) (n_strings n L) = 0.
 Proof.
   intros n L Hn.
-  induction L as [|x L IH]; [simpl; destruct (le_dec n 0) as [H|H]; trivial|].
-  destruct (n_strings_cases n (x :: L) Hn) as [E|[[P E]|[y [M [z [Ps E]]]]]]; rewrite E.
-  - trivial.
+  set (Ps := n_strings n L).
+  assert (legal Ps) as HL by apply n_strings_legal, Hn.
+  induction Ps as [|P Qs IH]; trivial.
+  destruct Qs as [|Q Rs].
   - rewrite score_cons.
     unfold andt, test1, shift.
     destruct (test0 P []); trivial.
   - rewrite score_cons.
-    simpl in E.
-    destruct (le_dec n (S (length L))); [|discriminate].
-    injection E as E1 E2.
-    rewrite <- E1 at 2.
-    rewrite IH.
-    destruct (andt _ _ _ _) eqn:N; [|trivial].
-    contradict N.
+    destruct HL as [HS HL].
+    rewrite IH by trivial.
+    destruct HS as [x [y [M [E1 E2]]]].
+    subst P Q.
     rewrite andt_tests01.
-    auto.
+    trivial.
 Qed.
 
 Lemma cycle2_test0_false :
