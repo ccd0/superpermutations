@@ -2,7 +2,6 @@ Require Import Omega.
 Require Import List.
 Require Import Permutation.
 Require Import ListTheorems.
-Require Euclid.
 Require Import NPeano.
 Import ListNotations.
 
@@ -101,6 +100,18 @@ Proof.
   induction k as [|k IH]; trivial.
 Qed.
 
+Lemma rotate_mod :
+  forall (A : Type) (k : nat) (L : list A),
+    rotate (k mod (length L)) L = rotate k L.
+Proof.
+  intros A k L.
+  destruct L as [|x M]; [symmetry; apply rotate_nil|].
+  set (r := k mod (length (x :: M))).
+  rewrite (div_mod k (length (x :: M))) by (simpl; auto).
+  rewrite <- rotate_plus, mult_comm, rotate_mult.
+  trivial.
+Qed.
+
 Lemma rotate_neg_bound :
   forall k n : nat, rotate_neg k n < max 1 n.
 Proof.
@@ -148,11 +159,10 @@ Proof.
   - intros [NZ [x H]].
     subst L.
     apply in_map_iff.
-    destruct (Euclid.modulo (length M) NZ x) as [y [z [H1 H2]]].
-    exists y.
-    subst x.
-    rewrite <- rotate_plus, rotate_mult, in_seq.
-    auto with *.
+    exists (x mod (length M)).
+    split.
+    + apply rotate_mod.
+    + apply in_seq, mod_bound_pos; omega.
 Qed.
 
 Lemma Permutation_rotate :
