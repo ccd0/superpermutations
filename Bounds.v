@@ -349,6 +349,15 @@ Proof.
   trivial.
 Qed.
 
+Lemma legal_step_nonempty :
+  forall P Q : list nat, legal_step P Q -> length P > 0.
+Proof.
+  intros P Q [x [y [L [E1 E2]]]].
+  subst P.
+  simpl.
+  omega.
+Qed.
+
 Lemma chosen0_correct :
   forall Ps : list (list nat),
     chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
@@ -510,36 +519,25 @@ Proof.
 Qed.
 
 Lemma andt_tests01 :
-  forall (x y : nat) (L : list nat) (Rs : list (list nat)),
-    andt test0 test1 (x :: L) ((L ++ [y]) :: Rs) = false.
+  forall (P Q : list nat) (Rs : list (list nat)),
+    legal_step P Q -> andt test0 test1 P (Q :: Rs) = false.
 Proof.
-  intros x y L Rs.
+  intros P Q Rs HL.
   unfold andt.
-  set (P := x :: L).
-  set (Q := L ++ [y]).
   destruct (test0 P (Q :: Rs)) eqn:H; [|tauto].
   destruct (test1 P (Q :: Rs)) eqn:K; [|tauto].
   unfold test1, shift, test1', test0, is_perm, is_visited, cycle_complete in H, K.
   autorewrite with bool_to_Prop in H, K.
   destruct H as [H1 H2].
   destruct K as [[K1 _] K2].
-  set (n := length P) in *.
-  assert (n = length Q) as E by (
-    subst n P Q;
-    rewrite app_length;
-    simpl;
-    omega
-  ).
-  rewrite <- E in K1.
+  rewrite <- (legal_step_length P Q HL) in K1.
   rewrite H1 in K1.
-  apply forced_rotate in K1.
+  apply legal_step_rotate1 in K1; [|trivial].
   contradict H2.
   apply K2.
-  subst P Q y.
-  change (In (x :: L) (rotations (rotate 1 (x :: L)))).
-  apply in_rotations_rotate.
-  simpl.
-  omega.
+  subst Q.
+  change (In P (rotations (rotate 1 P))).
+  apply in_rotations_rotate, (legal_step_nonempty _ _ HL).
 Qed.
 
 Lemma score_andt_tests01 :
@@ -555,11 +553,8 @@ Proof.
     destruct (test0 P []); trivial.
   - rewrite score_cons.
     destruct HL as [HS HL].
-    rewrite IH by trivial.
-    destruct HS as [x [y [M [E1 E2]]]].
-    subst P Q.
-    rewrite andt_tests01.
-    trivial.
+    rewrite andt_tests01 by trivial.
+    tauto.
 Qed.
 
 Lemma cycle2_test0_false :
