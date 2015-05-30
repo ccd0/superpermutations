@@ -23,6 +23,18 @@ Fixpoint n_strings (n : nat) (L : list nat) : list (list nat) :=
     end
   else [].
 
+Definition legal_step (P Q : list nat) : Prop :=
+  exists (x y : nat) (L : list nat), P = x :: L /\ Q = L ++ [y].
+
+Fixpoint legal (Ps : list (list nat)) : Prop :=
+  match Ps with
+  | [] => True
+  | P :: Qs => match Qs with
+    | [] => True
+    | Q :: Rs => legal_step P Q /\ legal Qs
+    end
+  end.
+
 Definition to_bool {P Q : Prop} (x : {P} + {Q}) : bool :=
   if x then true else false.
 
@@ -34,6 +46,9 @@ Definition is_visited (P : list nat) (Ps : list (list nat)) : bool :=
 
 Definition cycle_complete (P : list nat) (Ps : list (list nat)) : bool :=
   to_bool (incl_dec (list_eq_dec eq_nat_dec) (rotations P) Ps).
+
+Definition cycle2_member (P Q : list nat) : Prop :=
+  exists x j k : nat, P = rotate j (x :: rotate k Q).
 
 Definition genFun (A B : Type) : Type :=
   A -> list A -> B.
@@ -74,6 +89,15 @@ Definition test1' (P : list nat) (Ps : list (list nat)) : bool :=
 
 Definition test1 : list nat -> list (list nat) -> bool :=
   shift test1' false.
+
+Fixpoint cycle2 (P : list nat) (Ps : list (list nat)) : list nat :=
+  if (test0 P Ps) then
+    match Ps with
+    | [] => tail P
+    | Q :: Qs => cycle2 Q Qs
+    end
+  else
+    removelast P.
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -305,6 +329,37 @@ Proof.
   trivial.
 Qed.
 
+Lemma legal_step_length :
+  forall P Q : list nat, legal_step P Q -> length P = length Q.
+Proof.
+  intros P Q [x [y [L [HP HQ]]]].
+  subst P Q.
+  rewrite app_length.
+  simpl.
+  omega.
+Qed.
+
+Lemma forced_rotate :
+  forall (A : Type) (x y : A) (L : list A),
+    Permutation (x :: L) (L ++ [y]) -> x = y.
+Proof.
+  intros A x y L H.
+  rewrite <- Permutation_cons_append in H.
+  change (Permutation ([x] ++ L) ([y] ++ L)) in H.
+  apply Permutation_app_inv_r, Permutation_length_1 in H.
+  trivial.
+Qed.
+
+Lemma legal_step_rotate1 :
+  forall P Q : list nat, legal_step P Q -> Permutation P Q -> Q = rotate1 P.
+Proof.
+  intros P Q [x [y [L [HP HQ]]]] HPQ.
+  subst P Q.
+  apply forced_rotate in HPQ.
+  subst y.
+  trivial.
+Qed.
+
 Lemma chosen0_correct :
   forall Ps : list (list nat),
     chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
@@ -465,17 +520,6 @@ Proof.
   destruct (test1' P Ps); auto.
 Qed.
 
-Lemma forced_rotate :
-  forall (A : Type) (x y : A) (L : list A),
-    Permutation (x :: L) (L ++ [y]) -> x = y.
-Proof.
-  intros A x y L H.
-  rewrite <- Permutation_cons_append in H.
-  change (Permutation ([x] ++ L) ([y] ++ L)) in H.
-  apply Permutation_app_inv_r, Permutation_length_1 in H.
-  trivial.
-Qed.
-
 Lemma andt_tests01 :
   forall (x y : nat) (L : list nat) (Rs : list (list nat)),
     andt test0 test1 (x :: L) ((L ++ [y]) :: Rs) = false.
@@ -529,6 +573,80 @@ Proof.
     contradict N.
     rewrite andt_tests01.
     auto.
+Qed.
+
+Lemma cycle2_test0_false :
+  forall (P : list nat) (Ps : list (list nat)), test0 P Ps = false -> cycle2 P Ps = removelast P.
+Proof.
+  intros P Ps H.
+  destruct Ps; simpl; rewrite H; trivial.
+Qed.
+
+Lemma cycle2_member_tail :
+  forall P : list nat, P <> [] -> cycle2_member P (tail P).
+Proof.
+  intros P H.
+  destruct P as [|x P]; [tauto|].
+  exists x, 0, 0.
+  trivial.
+Qed.
+
+Lemma cycle2_member_removelast :
+  forall P : list nat, P <> [] -> cycle2_member P (removelast P).
+Proof.
+  intros P H.
+  set (Q := removelast P).
+  rewrite (@app_removelast_last _ P 0) by trivial.
+  exists (last P 0), 1, 0.
+  trivial.
+Qed.
+
+Lemma cycle2_member_rotate1 :
+  forall P Q : list nat, cycle2_member (rotate1 P) Q -> cycle2_member P Q.
+Proof.
+  intros P Q [x [j [k H]]].
+  exists x, (j + (length P - 1)), k.
+  rewrite <- rotate_plus, <- H.
+  change (P = rotate (1 + (length P - 1)) P).
+  destruct P as [|y P]; [trivial|].
+  replace (length (y :: P) - 1) with (length P) by (simpl; omega).
+  change (y :: P = rotate (length (y :: P)) (y :: P)).
+  rewrite rotate_full.
+  trivial.
+Qed.
+
+Lemma cycle2_correct :
+  forall (P : list nat) (Ps : list (list nat)),
+    P <> [] -> Forall (fun Q => Q <> []) Ps -> legal (P :: Ps) -> cycle2_member P (cycle2 P Ps).
+Proof.
+  intros P Ps HP HPs HL.
+  revert P HP HL.
+  induction Ps as [|Q Qs IH]; intros P HP HL; simpl.
+  - destruct (test0 P []).
+    + apply cycle2_member_tail, HP.
+    + apply cycle2_member_removelast, HP.
+  - destruct (test0 P (Q :: Qs)) eqn:HTP.
+    + inversion HPs as [|Q' Qs' HQ HQs [E1 E2]].
+      subst Q' Qs'.
+      destruct HL as [HS HL].
+      specialize (IH HQs Q HQ HL).
+      destruct (test0 Q Qs) eqn:HTQ.
+      * apply cycle2_member_rotate1.
+        rewrite <- (legal_step_rotate1 _ Q); trivial.
+        unfold test0, is_perm in HTP, HTQ.
+        autorewrite with bool_to_Prop in HTP, HTQ.
+        pose (legal_step_length P Q HS) as EL.
+        rewrite <- EL in HTQ.
+        apply (perm_trans (l' := (seq 0 (length P)))); intuition.
+      * rewrite cycle2_test0_false by trivial.
+        destruct HS as [x [y [L [EP EQ]]]].
+        subst P Q.
+        exists x, 0, 0.
+        rewrite removelast_app by auto with *.
+        simpl.
+        f_equal.
+        auto with *.
+    + apply cycle2_member_removelast, HP.
 Qed.
 
 Theorem bound0 :
