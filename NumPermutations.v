@@ -3,6 +3,7 @@ Require Import List.
 Require Import Permutation.
 Require Import ListTheorems.
 Require Euclid.
+Require Import NPeano.
 Import ListNotations.
 
 Definition rotate1 {A : Type} (L : list A) : list A :=
@@ -15,6 +16,12 @@ Fixpoint rotate {A : Type} (k : nat) (L : list A) : list A :=
   match k with
   | 0 => L
   | S k' => rotate k' (rotate1 L)
+  end.
+
+Definition rotate_neg (k n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S m => m - (k + m) mod n
   end.
 
 Definition rotations {A : Type} (L : list A) : list (list A) :=
@@ -85,6 +92,43 @@ Proof.
   simpl.
   rewrite <- rotate_plus, rotate_full.
   trivial.
+Qed.
+
+Lemma rotate_nil :
+  forall (A : Type) (k : nat), rotate k [] = @nil A.
+Proof.
+  intros A k.
+  induction k as [|k IH]; trivial.
+Qed.
+
+Lemma rotate_neg_bound :
+  forall k n : nat, rotate_neg k n < max 1 n.
+Proof.
+  intros k n.
+  destruct n as [|m]; [auto|].
+  simpl.
+  omega.
+Qed.
+
+Lemma rotate_inv :
+  forall (A : Type) (k : nat) (L : list A),
+    rotate (rotate_neg k (length L)) (rotate k L) = L.
+Proof.
+  intros A k L.
+  destruct L as [|x M].
+  - repeat rewrite rotate_nil.
+    trivial.
+  - set (m := length M).
+    set (r := (k + m) mod (S m)).
+    set (q := (k + m) / (S m)).
+    change (rotate (m - r) (rotate k (x :: M)) = x :: M).
+    rewrite rotate_plus.
+    assert (r < S m) as B by (apply mod_bound_pos; omega).
+    replace (k + (m - r)) with ((k + m) - r) by omega.
+    rewrite (div_mod (k + m) (S m)) by auto.
+    rewrite Nat.add_sub, mult_comm.
+    change (rotate (q * length (x :: M)) (x :: M) = x :: M).
+    apply rotate_mult.
 Qed.
 
 Lemma in_rotations :
