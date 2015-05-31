@@ -150,7 +150,7 @@ Proof.
     trivial.
 Qed.
 
-Lemma n_strings_correct1 :
+Lemma in_n_strings1 :
   forall (n : nat) (L P : list nat),
     ~ n <= length L -> (False <-> substring P L /\ length P = n).
 Proof.
@@ -162,13 +162,13 @@ Proof.
   omega.
 Qed.
 
-Lemma n_strings_correct :
+Lemma in_n_strings :
   forall (n : nat) (L P : list nat),
     In P (n_strings n L) <-> substring P L /\ length P = n.
 Proof.
   intros n L P.
   induction L as [|x L IH]; simpl.
-  - destruct (le_dec n 0) as [Len|Len]; [|apply n_strings_correct1; trivial].
+  - destruct (le_dec n 0) as [Len|Len]; [|apply in_n_strings1; trivial].
     simpl.
     split.
     + intros [E|F]; [|tauto].
@@ -180,7 +180,7 @@ Proof.
     + destruct P; auto with *.
       simpl in *.
       omega.
-  - destruct (le_dec n (S (length L))) as [Len|Len]; [|apply n_strings_correct1; trivial].
+  - destruct (le_dec n (S (length L))) as [Len|Len]; [|apply in_n_strings1; trivial].
     simpl.
     rewrite IH.
     split.
@@ -222,7 +222,7 @@ Lemma n_strings_all_perms :
   forall (n : nat) (L : list nat), all_perms n L -> all_perms' n (n_strings n L).
 Proof.
   intros n L HL P HP.
-  apply n_strings_correct.
+  apply in_n_strings.
   split; [auto|].
   apply Permutation_length in HP.
   rewrite seq_length in HP.
@@ -376,8 +376,8 @@ Proof.
   - apply NoDup_nub'.
   - apply NoDup_permutations, NoDup_seq.
   - intro P.
-    rewrite in_nub', filter_In, n_strings_correct.
-    rewrite permutations_correct, Permutation_is_perm.
+    rewrite in_nub', filter_In, in_n_strings.
+    rewrite in_permutations, Permutation_is_perm.
     specialize (H P).
     rewrite Permutation_is_perm in H.
     tauto.
@@ -478,7 +478,7 @@ Proof.
   - apply NoDup_incl_lel.
     + apply NoDup_permutations, NoDup_seq.
     + intro Q.
-      rewrite permutations_correct.
+      rewrite in_permutations.
       apply chosen1'_complete2; trivial.
       apply n_strings_all_perms.
       trivial.
@@ -487,7 +487,7 @@ Proof.
     replace (length Q) with n.
     + apply max_r.
       trivial.
-    + apply chosen_incl, n_strings_correct in HQ.
+    + apply chosen_incl, in_n_strings in HQ.
       omega.
 Qed.
 

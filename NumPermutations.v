@@ -355,7 +355,7 @@ Proof.
     trivial.
 Qed.
 
-Theorem permutations_correct :
+Theorem in_permutations :
   forall (A : Type) (L M : list A), In M (permutations L) <-> Permutation L M.
 Proof.
   intros A L.
@@ -489,7 +489,7 @@ Proof.
     destruct HM as [P [E HP]].
     subst M.
     rewrite <- rotations_rotations' by auto with *.
-    apply permutations_correct, (perm_skip x) in HP.
+    apply in_permutations, (perm_skip x) in HP.
     apply NoDup_rotations.
     revert HP ND.
     apply Permutation_NoDup.
@@ -499,7 +499,7 @@ Proof.
     intros [L1 [E1 H1]] [L2 [E2 H2]] [k1 [E3 H3]] [k2 [ER H4]].
     subst L1' L2' M.
     symmetry in ER.
-    rewrite permutations_correct, in_seq in *.
+    rewrite in_permutations, in_seq in *.
     replace k2 with k1 in *.
     + apply rotate_cancel in ER.
       trivial.
@@ -529,7 +529,7 @@ Proof.
     rewrite in_map_iff in H.
     destruct H as [P [E HP]].
     subst M.
-    apply permutations_correct, Permutation_length in HP.
+    apply in_permutations, Permutation_length in HP.
     rewrite HP.
     trivial.
 Qed.
