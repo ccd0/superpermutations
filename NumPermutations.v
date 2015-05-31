@@ -146,6 +146,21 @@ Proof.
     apply rotate_mult.
 Qed.
 
+Lemma rotate_cancel :
+  forall (A : Type) (k : nat) (L M : list A),
+    rotate k L = rotate k M -> L = M.
+Proof.
+  intros A k L M H.
+  assert (length L = length M) as E.
+  - apply (f_equal (@length A)) in H.
+    repeat rewrite rotate_length in H.
+    trivial.
+  - apply (f_equal (rotate (rotate_neg k (length L)))) in H.
+    rewrite E in H at 2.
+    repeat rewrite rotate_inv in H.
+    trivial.
+Qed.
+
 Lemma rotate1_map :
   forall (A B : Type) (f : A -> B) (L : list A),
     rotate1 (map f L) = map f (rotate1 L).
@@ -485,21 +500,11 @@ Proof.
     subst L1' L2' M.
     symmetry in ER.
     rewrite permutations_correct, in_seq in *.
-    assert (k1 = k2) as Ek by (
-      revert H3 H4 ER;
-      apply rotate_injective3; trivial; revert ND; apply Permutation_NoDup; auto
-    ).
-    subst k2.
-    assert (length (x :: L1) = length (x :: L2)) as EL by (
-      apply (f_equal (@length A)) in ER;
-      repeat rewrite rotate_length in ER;
-      trivial
-    ).
-    apply (f_equal (rotate (length (x :: L1) - k1))) in ER.
-    repeat rewrite rotate_plus in ER.
-    replace (k1 + (length (x :: L1) - k1)) with (length (x :: L1)) in ER by omega.
-    rewrite rotate_full, EL, rotate_full in ER.
-    trivial.
+    replace k2 with k1 in *.
+    + apply rotate_cancel in ER.
+      trivial.
+    + revert H3 H4 ER.
+      apply rotate_injective3; trivial; revert ND; apply Permutation_NoDup; auto.
   - apply NoDup_map.
     + intros L1 L2 H1 H2 E.
       injection E.
