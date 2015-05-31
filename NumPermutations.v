@@ -145,6 +145,43 @@ Proof.
     apply rotate_mult.
 Qed.
 
+Lemma rotate1_map :
+  forall (A B : Type) (f : A -> B) (L : list A),
+    rotate1 (map f L) = map f (rotate1 L).
+Proof.
+  intros A B f L.
+  induction L as [|x L IH]; trivial.
+  simpl.
+  rewrite map_app.
+  trivial.
+Qed.
+
+Lemma rotate_map :
+  forall (A B : Type) (k : nat) (f : A -> B) (L : list A),
+    rotate k (map f L) = map f (rotate k L).
+Proof.
+  intros A B k f L.
+  induction k as [|k IH]; trivial.
+  replace (S k) with (k + 1) by omega.
+  repeat rewrite <- rotate_plus.
+  rewrite IH.
+  apply rotate1_map.
+Qed.
+
+Lemma Permutation_rotate :
+  forall (A : Type) (k : nat) (L : list A), Permutation (rotate k L) L.
+Proof.
+  intros A k.
+  induction k as [|k IH]; trivial.
+  intro L.
+  simpl.
+  specialize (IH (rotate1 L)).
+  rewrite IH.
+  destruct L; trivial.
+  symmetry.
+  apply Permutation_cons_append.
+Qed.
+
 Lemma rotations_rotations' :
   forall (A : Type) (L : list A), L <> [] -> rotations L = rotations' L.
 Proof.
@@ -183,20 +220,6 @@ Proof.
       * apply rotate_mod.
       * apply nonempty_length in N.
         apply in_seq, mod_bound_pos; omega.
-Qed.
-
-Lemma Permutation_rotate :
-  forall (A : Type) (k : nat) (L : list A), Permutation (rotate k L) L.
-Proof.
-  intros A k.
-  induction k as [|k IH]; trivial.
-  intro L.
-  simpl.
-  specialize (IH (rotate1 L)).
-  rewrite IH.
-  destruct L; trivial.
-  symmetry.
-  apply Permutation_cons_append.
 Qed.
 
 Lemma rotate1_empty :
@@ -278,6 +301,16 @@ Proof.
   + symmetry.
     apply Permutation_rotate.
   + apply rotations_self.
+Qed.
+
+Lemma Permutation_rotations :
+  forall (A : Type) (L M : list A), In L (rotations M) -> Permutation L M.
+Proof.
+  intros A L M H.
+  rewrite in_rotations in H.
+  destruct H as [x H].
+  subst L.
+  apply Permutation_rotate.
 Qed.
 
 Lemma rotate_head :
@@ -497,37 +530,4 @@ Proof.
     apply permutations_correct, Permutation_length in HP.
     rewrite HP.
     trivial.
-Qed.
-
-Lemma Permutation_rotations :
-  forall (A : Type) (L M : list A), In L (rotations M) -> Permutation L M.
-Proof.
-  intros A L M H.
-  rewrite in_rotations in H.
-  destruct H as [x H].
-  subst L.
-  apply Permutation_rotate.
-Qed.
-
-Lemma rotate1_map :
-  forall (A B : Type) (f : A -> B) (L : list A),
-    rotate1 (map f L) = map f (rotate1 L).
-Proof.
-  intros A B f L.
-  induction L as [|x L IH]; trivial.
-  simpl.
-  rewrite map_app.
-  trivial.
-Qed.
-
-Lemma rotate_map :
-  forall (A B : Type) (k : nat) (f : A -> B) (L : list A),
-    rotate k (map f L) = map f (rotate k L).
-Proof.
-  intros A B k f L.
-  induction k as [|k IH]; trivial.
-  replace (S k) with (k + 1) by omega.
-  repeat rewrite <- rotate_plus.
-  rewrite IH.
-  apply rotate1_map.
 Qed.
