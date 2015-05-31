@@ -256,6 +256,27 @@ Proof.
         discriminate.
 Qed.
 
+Lemma legal_app :
+  forall L M : list (list nat), legal (L ++ M) -> legal M.
+Proof.
+  intros L M H.
+  induction L; trivial.
+  simpl in H.
+  destruct (L ++ M); tauto.
+Qed.
+
+Lemma assemble_app :
+  forall (A B : Type) (f : genFun A B) (L M : list A),
+    exists N : list B, assemble f (L ++ M) = N ++ assemble f M.
+Proof.
+  intros A B f L M.
+  induction L as [|x L [N IH]]; [exists []; trivial|].
+  exists (f x (L ++ M) :: N).
+  simpl.
+  rewrite IH.
+  trivial.
+Qed.
+
 Lemma chosen_incl :
   forall (A : Type) (f : testFun A) (Ps : list A),
     incl (chosen f Ps) Ps.
@@ -635,6 +656,80 @@ Proof.
   rewrite in_app_iff.
   left.
   apply rotations_self.
+Qed.
+
+Lemma cycle1_entry :
+  forall (x : nat) (L : list nat) (Ps Qs : list (list nat)),
+    test1' (L ++ [x]) (Ps ++ (x :: L) :: Qs) = true ->
+    test0 (x :: L) Qs = true ->
+    legal ((x :: L) :: Qs) ->
+      cycle2 (x :: L) Qs = L.
+Proof.
+  intros x L Ps Qs H1 H2 H3.
+  destruct Qs as [|Q Qs]; simpl; rewrite H2; [trivial|].
+  rewrite cycle2_test0_false.
+  - destruct H3 as [[y [z [M [E1 E2]]]] _].
+    injection E1 as E3 E4.
+    subst M y Q.
+    apply removelast_correct.
+  - destruct (test0 Q Qs) eqn:H4; trivial.
+    replace Q with (L ++ [x]) in H1.
+    + unfold test1', test0, is_visited in H1.
+      autorewrite with bool_to_Prop in H1.
+      destruct H1 as [[_ H1] _].
+      contradict H1.
+      auto with *.
+    + symmetry.
+      change (Q = rotate1 (x :: L)).
+      destruct H3 as [H3 _].
+      apply legal_step_rotate1; trivial.
+      unfold test0, is_perm in H2, H4.
+      autorewrite with bool_to_Prop in H2, H4.
+      apply legal_step_length in H3.
+      destruct H2 as [H2 _].
+      rewrite <- H3, H2 in H4.
+      tauto.
+Qed.
+
+Lemma old_cycle2 :
+  forall (x : nat) (L : list nat) (Ps : list (list nat)),
+    test1' (L ++ [x]) Ps = true -> legal Ps -> L <> [] -> In L (assemble cycle2 Ps).
+Proof.
+  intros x L Ps H1 H2 HN.
+  assert (H1a := H1).
+  unfold test1', test0, is_perm, is_visited, cycle_complete in H1a.
+  autorewrite with bool_to_Prop in H1a.
+  destruct H1a as [[H1a H1b] H1c].
+  destruct (search_last (list_eq_dec eq_nat_dec) (x :: L) Ps) as [[Qs [Rs [H3 H4]]]|H3].
+  - subst Ps.
+    destruct (assemble_app _ _ cycle2 Qs ((x :: L) :: Rs)) as [N E].
+    rewrite E.
+    apply in_or_app.
+    right.
+    left.
+    apply (cycle1_entry _ _ Qs).
+    + trivial.
+    + unfold test0, is_perm, is_visited.
+      autorewrite with bool_to_Prop.
+      split; trivial.
+      rewrite <- rotate1_length, H1a.
+      symmetry.
+      apply Permutation_cons_append.
+    + revert H2.
+      apply legal_app.
+  - contradict H3.
+    assert (In (x :: L) (rotations (rotate 1 (x :: L)))) as H4 by apply in_rotations_rotate.
+    specialize (H1c (x :: L) H4).
+    destruct H1c as [H1c|H1c]; trivial.
+    apply Permutation_NoDup in H1a; [|apply NoDup_seq].
+    rewrite H1c in H1a.
+    destruct L as [|y L].
+    * tauto.
+    * injection H1c as E1 E2.
+      subst y.
+      inversion H1a.
+      simpl in *.
+      tauto.
 Qed.
 
 Theorem bound0 :

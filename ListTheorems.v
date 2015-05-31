@@ -384,11 +384,11 @@ Proof.
   apply in_combine_r.
 Qed.
 
-Definition search
+Definition search_first
   {A : Type}
   (eq_dec : forall x y : A, {x = y} + {x <> y})
   (x : A) (L : list A) :
-    {M : list A & {N | L = M ++ x :: N}} + {~ In x L}.
+    {M : list A & {N | L = M ++ x :: N /\ ~ In x M}} + {~ In x L}.
 Proof.
   induction L as [|y L IH].
   - right.
@@ -397,14 +397,31 @@ Proof.
     + left.
       exists nil, L.
       subst y.
-      trivial.
-    + destruct IH as [[M [N P]]|NI].
+      tauto.
+    + destruct IH as [[M [N [H1 H2]]]|NI].
       * left.
         exists (y :: M), N.
         subst L.
-        trivial.
+        simpl.
+        intuition.
       * right.
         firstorder.
+Defined.
+
+Definition search_last
+  {A : Type}
+  (eq_dec : forall x y : A, {x = y} + {x <> y})
+  (x : A) (L : list A) :
+    {M : list A & {N | L = M ++ x :: N /\ ~ In x N}} + {~ In x L}.
+Proof.
+  destruct (search_first eq_dec x (rev L)) as [[M [N [H1 H2]]]|H].
+  - left.
+    exists (rev N), (rev M).
+    rewrite <- (rev_involutive L), <- rev_unit, <- rev_app_distr, <- app_assoc, H1, <- in_rev.
+    tauto.
+  - right.
+    rewrite <- in_rev in H.
+    trivial.
 Defined.
 
 Definition empty_dec {A : Type} (L : list A) :
@@ -445,7 +462,7 @@ Proof.
       intro H.
       apply Permutation_nil in H.
       discriminate.
-  - destruct (search eq_dec x M) as [[M1 [M2 HM]]|NI].
+  - destruct (search_first eq_dec x M) as [[M1 [M2 [HM _]]]|NI].
     subst M.
     + specialize (IH (M1 ++ M2)).
       destruct IH as [YP|NP].
