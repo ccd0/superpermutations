@@ -215,6 +215,40 @@ Proof.
   - tauto.
 Qed.
 
+Lemma NoDup_incl_Permutation :
+  forall (A : Type) (L M : list A),
+    NoDup L -> incl L M -> length L = length M -> Permutation L M.
+Proof.
+  intros A L M HN.
+  revert M.
+  induction L as [|x L IH]; intros M HI HL.
+  - symmetry in HL.
+    apply empty_length in HL.
+    subst M.
+    trivial.
+  - assert (In x M) as H by auto with *.
+    destruct (in_split x M H) as [M1 [M2 E]].
+    subst M.
+    rewrite <- Permutation_middle.
+    apply perm_skip.
+    apply IH.
+    + inversion HN.
+      trivial.
+    + intros y K.
+      assert (In y (x :: L)) as K2 by auto with *.
+      specialize (HI y K2).
+      rewrite in_app_iff in *.
+      simpl in HI.
+      destruct HI as [H1|[H2|H3]]; try tauto.
+      subst y.
+      inversion HN.
+      tauto.
+    + revert HL.
+      repeat rewrite app_length.
+      simpl.
+      auto with *.
+Qed.
+
 Lemma incl_drop :
   forall (A : Type) (L M : list A) (x : A), incl L (x :: M) -> ~ In x L -> incl L M.
 Proof.

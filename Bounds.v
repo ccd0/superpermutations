@@ -743,6 +743,83 @@ Proof.
       tauto.
 Qed.
 
+Lemma andt_tests12 :
+  forall (P Q : list nat) (Rs : list (list nat)),
+    legal (P :: Q :: Rs) -> length P >= 2 -> andt test1 test2 P (Q :: Rs) = false.
+Proof.
+  intros P Q Rs HL Hn.
+  unfold andt.
+  destruct (test2 P (Q :: Rs)) eqn:H2; [|apply andb_false_r].
+  assert (is_perm P = false) as H0' by (revert H2; apply test2_is_perm_false).
+  unfold test2, is_visited in H2.
+  autorewrite with bool_to_Prop in H2.
+  destruct H2 as [[[H21 H22] H23] _].
+  simpl in H21, H22, H23.
+  destruct (is_perm P) eqn:H0; [discriminate|].
+  rewrite andb_true_r.
+  apply not_true_is_false.
+  unfold test1.
+  simpl.
+  contradict H23.
+  destruct HL as [[x [y [L [E1 E2]]]] HL].
+  subst P Q.
+  assert (L <> []) as HN by (apply nonempty_length; auto with *).
+  apply in_or_app.
+  right.
+  apply in_flat_map.
+  exists L.
+  split.
+  - apply (old_cycle2 y); trivial.
+    apply (legal_app [L ++ [y]]), HL.
+  - assert (L = removelast L ++ [last L 0]) as E by apply app_removelast_last, HN.
+    set (M := removelast L) in E.
+    set (z := last L 0) in E.
+    rewrite E in *.
+    replace (removelast (x :: M ++ [z])) with (x :: M) in * by (
+      symmetry; apply (removelast_correct _ z (x :: M))
+    ).
+    destruct (eq_nat_dec x z) as [Hxz|Hxz].
+    + rewrite <- Hxz.
+      change (In (x :: M) (rotations (rotate 1 (x :: M)))).
+      apply in_rotations_rotate.
+    + apply not_true_iff_false in H0.
+      contradict H0.
+      unfold is_perm.
+      rewrite to_bool_iff.
+      unfold test1', test0, is_perm in H23.
+      autorewrite with bool_to_Prop in H23.
+      destruct H23 as [[H23 _] _].
+      symmetry.
+      apply NoDup_incl_Permutation.
+      * change (NoDup ((x :: M) ++ [z])).
+        apply NoDup_app; [trivial|apply NoDup_singleton|].
+        intros w [K1 [K2|]]; trivial.
+        destruct K1 as [K1|K1]; [omega|].
+        subst w.
+        apply Permutation_NoDup in H23; [|apply NoDup_seq].
+        apply NoDup_remove_1 in H23.
+        rewrite app_nil_r in H23.
+        assert (Permutation (z :: M) (M ++ [z])) as HP by apply Permutation_cons_append.
+        symmetry in HP.
+        apply (Permutation_NoDup _ _ (z :: M)) in H23; [|trivial].
+        inversion H23.
+        tauto.
+      * intros w K.
+        change (In w ((x :: M) ++ [z])) in K.
+        rewrite in_app_iff in K.
+        destruct K as [K|K]; [apply H22, K|].
+        simpl in K.
+        destruct K as [K|K]; [|tauto].
+        subst w.
+        symmetry in H23.
+        rewrite app_length, plus_comm in H23.
+        change (Permutation ((M ++ [z]) ++ [y]) (seq 0 (length (x :: M ++ [z])))) in H23.
+        apply (Permutation_in _ H23).
+        auto with *.
+      * rewrite seq_length.
+        trivial.
+Qed.
+
 Theorem bound0 :
   forall (n : nat) (L : list nat),
     all_perms n L -> length L >= n.
