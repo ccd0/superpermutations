@@ -641,21 +641,34 @@ Proof.
     + apply cycle2_member_removelast, HP.
 Qed.
 
+Lemma test2_is_perm_false :
+  forall (P : list nat) (Qs : list (list nat)),
+    test2 P Qs = true -> is_perm P = false.
+Proof.
+  intros P Qs H.
+  unfold test2 in H.
+  destruct Qs as [|Q Rs]; simpl in H.
+  - rewrite andb_false_r in H.
+    discriminate.
+  - destruct (is_perm P); trivial.
+    unfold is_visited in H.
+    autorewrite with bool_to_Prop in H.
+    destruct H as [[_ H] _].
+    contradict H.
+    apply in_or_app.
+    left.
+    apply rotations_self.
+Qed.
+
 Lemma andt_tests02 :
   forall (P Q : list nat) (Rs : list (list nat)),
     andt test0 test2 P (Q :: Rs) = false.
 Proof.
   intros P Q Rs.
-  unfold andt, test0, test2.
-  simpl.
-  unfold is_visited.
-  destruct (is_perm P); autorewrite with bool_to_Prop; [|tauto].
-  right.
-  left.
-  right.
-  rewrite in_app_iff.
-  left.
-  apply rotations_self.
+  unfold andt, test0.
+  destruct (test2 P (Q :: Rs)) eqn:E; autorewrite with bool_to_Prop; [|tauto].
+  apply test2_is_perm_false in E.
+  tauto.
 Qed.
 
 Lemma cycle1_entry :
