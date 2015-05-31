@@ -102,6 +102,7 @@ Fixpoint cycle2 (P : list nat) (Ps : list (list nat)) : list nat :=
 Definition test2 (P : list nat) (Ps : list (list nat)) : bool :=
   let C := cycle2 P Ps in
     to_bool (NoDup_dec eq_nat_dec C)
+      && to_bool (incl_dec eq_nat_dec C (seq 0 (length P)))
       && negb (is_visited C (flat_map rotations (assemble cycle2 Ps)))
       && negb (to_bool (empty_dec Ps)).
 
