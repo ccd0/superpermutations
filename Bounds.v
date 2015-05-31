@@ -99,6 +99,12 @@ Fixpoint cycle2 (P : list nat) (Ps : list (list nat)) : list nat :=
   else
     removelast P.
 
+Definition test2 (P : list nat) (Ps : list (list nat)) : bool :=
+  let C := cycle2 P Ps in
+    to_bool (NoDup_dec eq_nat_dec C)
+      && negb (is_visited C (flat_map rotations (assemble cycle2 Ps)))
+      && negb (to_bool (empty_dec Ps)).
+
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
 Proof.
@@ -613,6 +619,23 @@ Proof.
         f_equal.
         auto with *.
     + apply cycle2_member_removelast, HP.
+Qed.
+
+Lemma andt_tests02 :
+  forall (P Q : list nat) (Rs : list (list nat)),
+    andt test0 test2 P (Q :: Rs) = false.
+Proof.
+  intros P Q Rs.
+  unfold andt, test2.
+  simpl.
+  unfold is_visited.
+  destruct (test0 P (Q :: Rs)); autorewrite with bool_to_Prop; [|tauto].
+  right.
+  left.
+  right.
+  rewrite in_app_iff.
+  left.
+  apply rotations_self.
 Qed.
 
 Theorem bound0 :
