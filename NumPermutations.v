@@ -388,16 +388,14 @@ Lemma rotate_injective1 :
 Proof.
   intros A k L HL Hk ER.
   destruct HL as [|x L Hx HL]; [simpl in Hk; omega|].
-  destruct (zerop k) as [Hk2|Hk2]; trivial.
-  contradict Hx.
   destruct k as [|k]; [omega|].
+  contradict Hx.
   simpl in *.
-  apply lt_S_n in Hk.
   set (M := @nil A).
   replace (L ++ [x]) with (L ++ [x] ++ M) in ER by (rewrite app_nil_r; trivial).
   revert Hk ER.
   generalize M.
-  clear HL M Hk2.
+  clear HL M.
   revert L.
   induction k as [|k IH]; intros [|y L] M Hk ER; simpl in Hk; try omega.
   - injection ER as E.
