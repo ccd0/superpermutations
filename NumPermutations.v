@@ -23,13 +23,16 @@ Definition rotate_neg (k n : nat) : nat :=
   | S m => m - (k + m) mod n
   end.
 
-Definition rotations {A : Type} (L : list A) : list (list A) :=
+Definition rotations' {A : Type} (L : list A) : list (list A) :=
   map (fun k => rotate k L) (seq 0 (length L)).
+
+Definition rotations {A : Type} (L : list A) : list (list A) :=
+  if empty_dec L then [[]] else rotations' L.
 
 Fixpoint permutations {A : Type} (L : list A) : list (list A) :=
   match L with
   | [] => [[]]
-  | x :: M => flat_map rotations (map (cons x) (permutations M))
+  | x :: M => flat_map rotations' (map (cons x) (permutations M))
   end.
 
 Lemma rotate1_length :
@@ -142,27 +145,44 @@ Proof.
     apply rotate_mult.
 Qed.
 
+Lemma rotations_rotations' :
+  forall (A : Type) (L : list A), L <> [] -> rotations L = rotations' L.
+Proof.
+  intros A L H.
+  unfold rotations.
+  destruct (empty_dec L) as [E|E]; tauto.
+Qed.
+
 Lemma in_rotations :
   forall (A : Type) (L M : list A),
-    (In L (rotations M) <-> length M > 0 /\ exists k, L = rotate k M).
+    In L (rotations M) <-> exists k, L = rotate k M.
 Proof.
   intros A L M.
-  split.
-  - unfold rotations.
-    rewrite in_map_iff.
-    intros [x [H1 H2]].
+  unfold rotations, rotations'.
+  destruct (empty_dec M) as [E|N].
+  - simpl.
     split.
-    + revert H2.
-      destruct M; simpl; auto with *.
-    + exists x.
+    + intros [H|H]; [|tauto].
+      exists 0.
+      subst.
+      trivial.
+    + intros [k H].
+      subst.
+      rewrite rotate_nil.
+      tauto.
+  - split.
+    + rewrite in_map_iff.
+      intros [x [H1 H2]].
+      exists x.
       auto.
-  - intros [NZ [x H]].
-    subst L.
-    apply in_map_iff.
-    exists (x mod (length M)).
-    split.
-    + apply rotate_mod.
-    + apply in_seq, mod_bound_pos; omega.
+    + intros [x E].
+      subst L.
+      apply in_map_iff.
+      exists (x mod (length M)).
+      split.
+      * apply rotate_mod.
+      * apply nonempty_length in N.
+        apply in_seq, mod_bound_pos; omega.
 Qed.
 
 Lemma Permutation_rotate :
@@ -179,12 +199,23 @@ Proof.
   apply Permutation_cons_append.
 Qed.
 
+Lemma rotate1_empty :
+  forall (A : Type) (L : list A), L = [] <-> rotate1 L = [].
+Proof.
+  intros A L.
+  repeat rewrite empty_length.
+  rewrite rotate1_length.
+  tauto.
+Qed.
+
 Lemma rotations_rotate1 :
   forall (A : Type) (L : list A),
     rotations (rotate1 L) = rotate1 (rotations L).
 Proof.
   intros A L.
-  unfold rotations.
+  unfold rotations, rotations'.
+  pose (rotate1_empty _ L) as HE3.
+  destruct (empty_dec L) as [HE|HE]; destruct (empty_dec (rotate1 L)) as [HE2|HE2]; try tauto.
   rewrite rotate1_length.
   set (n := length L).
   assert (n = length L) as E by trivial.
@@ -217,34 +248,36 @@ Proof.
 Qed.
 
 Lemma rotations_self :
-  forall (A : Type) (L : list A), length L > 0 -> In L (rotations L).
+  forall (A : Type) (L : list A), In L (rotations L).
 Proof.
-  intros A L H.
+  intros A L.
   apply in_rotations.
-  split; trivial.
   exists 0.
   trivial.
 Qed.
 
 Lemma rotations_length :
-  forall (A : Type) (L : list A), length (rotations L) = length L.
+  forall (A : Type) (L : list A), length (rotations L) = max 1 (length L).
 Proof.
   intros A L.
-  unfold rotations.
-  rewrite map_length, seq_length.
-  trivial.
+  unfold rotations, rotations'.
+  destruct (empty_dec L) as [H|H].
+  - subst.
+    trivial.
+  - rewrite map_length, seq_length.
+    apply nonempty_length in H.
+    rewrite max_r; trivial.
 Qed.
 
 Lemma in_rotations_rotate :
-  forall (A : Type) (k : nat) (L : list A), length L > 0 -> In L (rotations (rotate k L)).
+  forall (A : Type) (k : nat) (L : list A), In L (rotations (rotate k L)).
 Proof.
-  intros A k L NZ.
+  intros A k L.
   rewrite rotations_rotate.
   apply (Permutation_in (l := rotations L)).
   + symmetry.
     apply Permutation_rotate.
   + apply rotations_self.
-    trivial.
 Qed.
 
 Lemma rotate_head :
@@ -288,8 +321,9 @@ Proof.
     + intros [N [H1 H2]].
       rewrite in_map_iff in H1.
       destruct H1 as [P [E1 H1]].
+      rewrite <- rotations_rotations' in H2 by (subst; auto with *).
       rewrite in_rotations in H2.
-      destruct H2 as [_ [k E2]].
+      destruct H2 as [k E2].
       subst N M.
       rewrite IH in H1.
       rewrite Permutation_rotate.
@@ -310,7 +344,8 @@ Proof.
         split; trivial.
         revert H.
         apply Permutation_cons_inv.
-      * apply in_rotations_rotate.
+      * rewrite <- rotations_rotations'; [apply in_rotations_rotate|].
+        rewrite nonempty_length, rotate_length.
         omega.
 Qed.
 
@@ -389,6 +424,8 @@ Lemma NoDup_rotations :
   forall (A : Type) (L : list A), NoDup L -> NoDup (rotations L).
 Proof.
   intros A L HL.
+  unfold rotations.
+  destruct (empty_dec L) as [E|E]; [apply NoDup_singleton|].
   apply NoDup_map, NoDup_seq.
   intros k1 k2.
   repeat rewrite in_seq.
@@ -406,29 +443,31 @@ Proof.
     rewrite in_map_iff in HM.
     destruct HM as [P [E HP]].
     subst M.
+    rewrite <- rotations_rotations' by auto with *.
     apply permutations_correct, (perm_skip x) in HP.
     apply NoDup_rotations.
     revert HP ND.
     apply Permutation_NoDup.
   - intros L1' L2' M.
-    unfold rotations.
+    unfold rotations'.
     repeat rewrite in_map_iff.
     intros [L1 [E1 H1]] [L2 [E2 H2]] [k1 [E3 H3]] [k2 [ER H4]].
     subst L1' L2' M.
     symmetry in ER.
     rewrite permutations_correct, in_seq in *.
-    assert (k1 = k2) as Ek.
-      revert H3 H4 ER.
-      apply rotate_injective3; trivial; revert ND; apply Permutation_NoDup; auto.
+    assert (k1 = k2) as Ek by (
+      revert H3 H4 ER;
+      apply rotate_injective3; trivial; revert ND; apply Permutation_NoDup; auto
+    ).
     subst k2.
-    assert (length (x :: L1) = length (x :: L2)) as EL.
-      apply (f_equal (@length A)) in ER.
-      repeat rewrite rotate_length in ER.
-      trivial.
+    assert (length (x :: L1) = length (x :: L2)) as EL by (
+      apply (f_equal (@length A)) in ER;
+      repeat rewrite rotate_length in ER;
+      trivial
+    ).
     apply (f_equal (rotate (length (x :: L1) - k1))) in ER.
     repeat rewrite rotate_plus in ER.
-    replace (k1 + (length (x :: L1) - k1))
-      with (length (x :: L1)) in ER by omega.
+    replace (k1 + (length (x :: L1) - k1)) with (length (x :: L1)) in ER by omega.
     rewrite rotate_full, EL, rotate_full in ER.
     trivial.
   - apply NoDup_map.
@@ -436,8 +475,8 @@ Proof.
       injection E.
       trivial.
     + apply IH.
-      revert ND.
-      apply (NoDup_remove_1 nil).
+      inversion ND.
+      trivial.
 Qed.
 
 Theorem permutations_length :
@@ -450,7 +489,7 @@ Proof.
   - rewrite map_length, IH.
     trivial.
   - intros M H.
-    unfold rotations.
+    unfold rotations'.
     rewrite map_length, seq_length.
     rewrite in_map_iff in H.
     destruct H as [P [E HP]].
@@ -464,9 +503,8 @@ Lemma Permutation_rotations :
   forall (A : Type) (L M : list A), In L (rotations M) -> Permutation L M.
 Proof.
   intros A L M H.
-  unfold rotations in H.
-  rewrite in_map_iff in H.
-  destruct H as [x [H _]].
+  rewrite in_rotations in H.
+  destruct H as [x H].
   subst L.
   apply Permutation_rotate.
 Qed.

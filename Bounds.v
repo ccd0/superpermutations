@@ -349,15 +349,6 @@ Proof.
   trivial.
 Qed.
 
-Lemma legal_step_nonempty :
-  forall P Q : list nat, legal_step P Q -> length P > 0.
-Proof.
-  intros P Q [x [y [L [E1 E2]]]].
-  subst P.
-  simpl.
-  omega.
-Qed.
-
 Lemma chosen0_correct :
   forall Ps : list (list nat),
     chosen test0 Ps = nub' (list_eq_dec eq_nat_dec) (filter is_perm Ps).
@@ -405,23 +396,21 @@ Qed.
 
 Lemma chosen1'_complete1 :
   forall (n : nat) (Ps : list (list nat)) (Q : list nat),
-    n >= 1 ->
     Permutation (seq 0 n) Q ->
     incl (rotations Q) Ps ->
       exists k : nat, In (rotate k Q) (chosen test1' Ps).
 Proof.
-  intros n Ps Q Hn H1 H2.
-  assert (length Q > 0) as NZ by (apply Permutation_seq_length in H1; omega).
+  intros n Ps Q H1 H2.
   induction Ps as [|P Ps IH].
   - assert (~ In Q []) as H by apply in_nil.
     contradict H.
-    apply H2, rotations_self, NZ.
+    apply H2, rotations_self.
   - unfold chosen.
     simpl.
     destruct (test1' P Ps) eqn:E.
     + destruct (in_dec (list_eq_dec eq_nat_dec) P (rotations Q)) as [I|NI].
       * rewrite in_rotations in I.
-        destruct I as [_ [k I]].
+        destruct I as [k I].
         exists k.
         simpl.
         auto.
@@ -437,7 +426,7 @@ Proof.
       destruct I as [E2|I]; trivial.
       subst R.
       rewrite in_rotations in HR.
-      destruct HR as [_ [k HR]].
+      destruct HR as [k HR].
       subst P.
       unfold test1', test0, is_perm, is_visited, cycle_complete in E.
       autorewrite with bool_to_Prop in E.
@@ -458,11 +447,9 @@ Qed.
 
 Lemma chosen1'_complete2 :
   forall (n : nat) (Ps : list (list nat)),
-    n >= 1 ->
-    all_perms' n Ps ->
-      all_perms' n (flat_map rotations (chosen test1' Ps)).
+    all_perms' n Ps -> all_perms' n (flat_map rotations (chosen test1' Ps)).
 Proof.
-  intros n Ps Hn HPs Q HQ.
+  intros n Ps HPs Q HQ.
   apply in_flat_map.
   assert (exists k : nat, In (rotate k Q) (chosen test1' Ps)) as [k I].
   - apply (chosen1'_complete1 n); trivial.
@@ -474,8 +461,6 @@ Proof.
   - exists (rotate k Q).
     split; trivial.
     apply in_rotations_rotate.
-    apply Permutation_seq_length in HQ.
-    omega.
 Qed.
 
 Lemma score1'_final :
@@ -499,8 +484,11 @@ Proof.
       trivial.
   - intros Q HQ.
     rewrite rotations_length.
-    apply chosen_incl, n_strings_correct in HQ.
-    tauto.
+    replace (length Q) with n.
+    + apply max_r.
+      trivial.
+    + apply chosen_incl, n_strings_correct in HQ.
+      omega.
 Qed.
 
 Lemma score1_final :
@@ -537,7 +525,7 @@ Proof.
   apply K2.
   subst Q.
   change (In P (rotations (rotate 1 P))).
-  apply in_rotations_rotate, (legal_step_nonempty _ _ HL).
+  apply in_rotations_rotate.
 Qed.
 
 Lemma score_andt_tests01 :

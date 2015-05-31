@@ -19,6 +19,25 @@ Fixpoint nub'
 Definition select {A : Type} (L : list bool) (M : list A) : list A :=
   map (@snd bool A) (filter (@fst bool A) (combine L M)).
 
+Lemma empty_length :
+  forall (A : Type) (L : list A), L = [] <-> length L = 0.
+Proof.
+  intros A [|x L].
+  - tauto.
+  - simpl.
+    split; intro H; contradict H; auto with *.
+Qed.
+
+Lemma nonempty_length :
+  forall (A : Type) (L : list A), L <> [] <-> length L > 0.
+Proof.
+  intros A [|x L].
+  - simpl.
+    intuition.
+  - simpl.
+    auto with *.
+Qed.
+
 Lemma firstn_correct :
   forall (A : Type) (L M : list A), firstn (length L) (L ++ M) = L.
 Proof.
@@ -69,6 +88,14 @@ Proof.
   destruct (f x); simpl.
   - omega.
   - auto.
+Qed.
+
+Lemma NoDup_singleton :
+  forall (A : Type) (x : A), NoDup [x].
+Proof.
+  intros A x.
+  apply NoDup_cons; [tauto|].
+  apply NoDup_nil.
 Qed.
 
 Lemma NoDup_app :
@@ -361,6 +388,14 @@ Proof.
         trivial.
       * right.
         firstorder.
+Defined.
+
+Definition empty_dec {A : Type} (L : list A) :
+  {L = []} + {L <> []}.
+Proof.
+  destruct L.
+  - tauto.
+  - auto with *.
 Defined.
 
 Definition NoDup_dec
