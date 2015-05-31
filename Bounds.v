@@ -575,14 +575,10 @@ Lemma cycle2_member_rotate1 :
   forall P Q : list nat, cycle2_member (rotate1 P) Q -> cycle2_member P Q.
 Proof.
   intros P Q [x [j [k H]]].
-  exists x, (j + (length P - 1)), k.
+  exists x, (j + rotate_neg 1 (length P)), k.
   rewrite <- rotate_plus, <- H.
-  change (P = rotate (1 + (length P - 1)) P).
-  destruct P as [|y P]; [trivial|].
-  replace (length (y :: P) - 1) with (length P) by (simpl; omega).
-  change (y :: P = rotate (length (y :: P)) (y :: P)).
-  rewrite rotate_full.
-  trivial.
+  symmetry.
+  apply rotate_inv.
 Qed.
 
 Lemma cycle2_correct :
