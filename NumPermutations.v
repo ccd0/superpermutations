@@ -57,23 +57,24 @@ Proof.
   apply rotate1_length.
 Qed.
 
-Lemma rotate_full :
-  forall (A : Type) (L : list A), rotate (length L) L = L.
+Lemma rotate_swap :
+  forall (A : Type) (L M : list A),
+    rotate (length L) (L ++ M) = M ++ L.
 Proof.
   intros A L.
-  set (M := @nil A).
-  change (rotate (length L) L = M ++ L).
-  assert (rotate (length L) L = rotate (length L) (L ++ M)) as RW.
-    rewrite app_nil_r.
-    trivial.
-  rewrite RW.
-  generalize M.
-  clear M RW.
   induction L as [|x L IH]; intro M; simpl.
   - auto with *.
   - specialize (IH (M ++ [x])).
     rewrite <- app_assoc in *.
     trivial.
+Qed.
+
+Lemma rotate_full :
+  forall (A : Type) (L : list A), rotate (length L) L = L.
+Proof.
+  intros A L.
+  replace L with (L ++ []) at 2 by auto with *.
+  apply rotate_swap.
 Qed.
 
 Lemma rotate_plus :
@@ -382,6 +383,7 @@ Proof.
         omega.
 Qed.
 
+
 Lemma rotate_injective1 :
   forall (A : Type) (k : nat) (L : list A),
     NoDup L -> k < length L -> head (rotate k L) = head L -> k = 0.
@@ -391,21 +393,18 @@ Proof.
   destruct k as [|k]; [omega|].
   contradict Hx.
   simpl in *.
-  set (M := @nil A).
-  replace (L ++ [x]) with (L ++ [x] ++ M) in ER by (rewrite app_nil_r; trivial).
-  revert Hk ER.
-  generalize M.
-  clear HL M.
-  revert L.
-  induction k as [|k IH]; intros [|y L] M Hk ER; simpl in Hk; try omega.
-  - injection ER as E.
+  replace L with (firstn k L ++ skipn k L) in ER by apply firstn_skipn.
+  rewrite <- app_assoc in ER.
+  rewrite <- (min_l k (length L)) in ER at 1 by omega.
+  rewrite <- firstn_length, rotate_swap in ER.
+  destruct (skipn k L) as [|y M] eqn:E.
+  - rewrite empty_length, skipn_length in E.
+    rewrite min_l in E; omega.
+  - simpl in ER.
+    injection ER as ER'.
     subst y.
+    rewrite <- (firstn_skipn k), in_app_iff, E.
     auto with *.
-  - apply lt_S_n in Hk.
-    specialize (IH L (M ++ [y])).
-    simpl in *.
-    rewrite <- app_assoc in ER.
-    tauto.
 Qed.
 
 Lemma rotate_injective2 :

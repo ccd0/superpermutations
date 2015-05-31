@@ -48,6 +48,16 @@ Proof.
   trivial.
 Qed.
 
+Lemma skipn_length :
+  forall (A : Type) (k : nat) (L : list A), length (skipn k L) = length L - min k (length L).
+Proof.
+  intros A k L.
+  apply (plus_reg_l _ _ (min k (length L))).
+  rewrite <- firstn_length at 1.
+  rewrite <- app_length, firstn_skipn.
+  auto with *.
+Qed.
+
 Lemma in_seq :
   forall m n x, In x (seq m n) <-> m <= x < m + n.
 Proof.
