@@ -38,6 +38,13 @@ Proof.
     auto with *.
 Qed.
 
+Lemma removelast_correct :
+  forall (A : Type) (x : A) (L : list A), removelast (L ++ [x]) = L.
+Proof.
+  intros A x L.
+  rewrite removelast_app; simpl; auto with *.
+Qed.
+
 Lemma firstn_correct :
   forall (A : Type) (L M : list A), firstn (length L) (L ++ M) = L.
 Proof.

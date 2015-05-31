@@ -615,10 +615,8 @@ Proof.
         destruct HS as [x [y [L [EP EQ]]]].
         subst P Q.
         exists x, 0, 0.
-        rewrite removelast_app by auto with *.
-        simpl.
-        f_equal.
-        auto with *.
+        rewrite removelast_correct.
+        trivial.
     + apply cycle2_member_removelast, HP.
 Qed.
 
