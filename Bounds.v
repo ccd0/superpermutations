@@ -91,7 +91,7 @@ Definition test1 : list nat -> list (list nat) -> bool :=
   shift test1' false.
 
 Fixpoint cycle2 (P : list nat) (Ps : list (list nat)) : list nat :=
-  if (test0 P Ps) then
+  if is_perm P then
     match Ps with
     | [] => tail P
     | Q :: Qs => cycle2 Q Qs
@@ -573,8 +573,8 @@ Proof.
     tauto.
 Qed.
 
-Lemma cycle2_test0_false :
-  forall (P : list nat) (Ps : list (list nat)), test0 P Ps = false -> cycle2 P Ps = removelast P.
+Lemma cycle2_is_perm_false :
+  forall (P : list nat) (Ps : list (list nat)), is_perm P = false -> cycle2 P Ps = removelast P.
 Proof.
   intros P Ps H.
   destruct Ps; simpl; rewrite H; trivial.
@@ -616,23 +616,23 @@ Proof.
   intros P Ps HP HPs HL.
   revert P HP HL.
   induction Ps as [|Q Qs IH]; intros P HP HL; simpl.
-  - destruct (test0 P []).
+  - destruct (is_perm P).
     + apply cycle2_member_tail, HP.
     + apply cycle2_member_removelast, HP.
-  - destruct (test0 P (Q :: Qs)) eqn:HTP.
+  - destruct (is_perm P) eqn:HTP.
     + inversion HPs as [|Q' Qs' HQ HQs [E1 E2]].
       subst Q' Qs'.
       destruct HL as [HS HL].
       specialize (IH HQs Q HQ HL).
-      destruct (test0 Q Qs) eqn:HTQ.
+      destruct (is_perm Q) eqn:HTQ.
       * apply cycle2_member_rotate1.
         rewrite <- (legal_step_rotate1 _ Q); trivial.
-        unfold test0, is_perm in HTP, HTQ.
+        unfold is_perm in HTP, HTQ.
         autorewrite with bool_to_Prop in HTP, HTQ.
         pose (legal_step_length P Q HS) as EL.
         rewrite <- EL in HTQ.
-        apply (perm_trans (l' := (seq 0 (length P)))); intuition.
-      * rewrite cycle2_test0_false by trivial.
+        apply (perm_trans (l' := (seq 0 (length P)))); auto with *.
+      * rewrite cycle2_is_perm_false by trivial.
         destruct HS as [x [y [L [EP EQ]]]].
         subst P Q.
         exists x, 0, 0.
@@ -646,10 +646,10 @@ Lemma andt_tests02 :
     andt test0 test2 P (Q :: Rs) = false.
 Proof.
   intros P Q Rs.
-  unfold andt, test2.
+  unfold andt, test0, test2.
   simpl.
   unfold is_visited.
-  destruct (test0 P (Q :: Rs)); autorewrite with bool_to_Prop; [|tauto].
+  destruct (is_perm P); autorewrite with bool_to_Prop; [|tauto].
   right.
   left.
   right.
@@ -661,18 +661,18 @@ Qed.
 Lemma cycle1_entry :
   forall (x : nat) (L : list nat) (Ps Qs : list (list nat)),
     test1' (L ++ [x]) (Ps ++ (x :: L) :: Qs) = true ->
-    test0 (x :: L) Qs = true ->
+    is_perm (x :: L) = true ->
     legal ((x :: L) :: Qs) ->
       cycle2 (x :: L) Qs = L.
 Proof.
   intros x L Ps Qs H1 H2 H3.
   destruct Qs as [|Q Qs]; simpl; rewrite H2; [trivial|].
-  rewrite cycle2_test0_false.
+  rewrite cycle2_is_perm_false.
   - destruct H3 as [[y [z [M [E1 E2]]]] _].
     injection E1 as E3 E4.
     subst M y Q.
     apply removelast_correct.
-  - destruct (test0 Q Qs) eqn:H4; trivial.
+  - destruct (is_perm Q) eqn:H4; trivial.
     replace Q with (L ++ [x]) in H1.
     + unfold test1', test0, is_visited in H1.
       autorewrite with bool_to_Prop in H1.
@@ -683,12 +683,11 @@ Proof.
       change (Q = rotate1 (x :: L)).
       destruct H3 as [H3 _].
       apply legal_step_rotate1; trivial.
-      unfold test0, is_perm in H2, H4.
+      unfold is_perm in H2, H4.
       autorewrite with bool_to_Prop in H2, H4.
       apply legal_step_length in H3.
-      destruct H2 as [H2 _].
       rewrite <- H3, H2 in H4.
-      tauto.
+      trivial.
 Qed.
 
 Lemma old_cycle2 :
@@ -709,9 +708,8 @@ Proof.
     left.
     apply (cycle1_entry _ _ Qs).
     + trivial.
-    + unfold test0, is_perm, is_visited.
+    + unfold is_perm, is_visited.
       autorewrite with bool_to_Prop.
-      split; trivial.
       rewrite <- rotate1_length, H1a.
       symmetry.
       apply Permutation_cons_append.
