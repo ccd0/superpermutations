@@ -744,10 +744,10 @@ Proof.
 Qed.
 
 Lemma andt_tests12 :
-  forall (P Q : list nat) (Rs : list (list nat)),
-    legal (P :: Q :: Rs) -> length P >= 2 -> andt test1 test2 P (Q :: Rs) = false.
+  forall (P : list nat) (Qs : list (list nat)),
+    legal (P :: Qs) -> length P >= 2 -> andt test1 test2 P Qs = false.
 Proof.
-  intros P Q Rs HL Hn.
+  intros P [|Q Rs] HL Hn; trivial.
   unfold andt.
   destruct (test2 P (Q :: Rs)) eqn:H2; [|apply andb_false_r].
   assert (is_perm P = false) as H0' by (revert H2; apply test2_is_perm_false).
