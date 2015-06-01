@@ -661,14 +661,17 @@ Proof.
 Qed.
 
 Lemma andt_tests02 :
-  forall (P Q : list nat) (Rs : list (list nat)),
-    andt test0 test2 P (Q :: Rs) = false.
+  forall (P : list nat) (Qs : list (list nat)),
+    andt test0 test2 P Qs = false.
 Proof.
-  intros P Q Rs.
-  unfold andt, test0.
-  destruct (test2 P (Q :: Rs)) eqn:E; autorewrite with bool_to_Prop; [|tauto].
-  apply test2_is_perm_false in E.
-  tauto.
+  intros P [|Q Rs].
+  - unfold andt, test2.
+    repeat rewrite andb_false_r.
+    trivial.
+  - unfold andt, test0.
+    destruct (test2 P (Q :: Rs)) eqn:E; autorewrite with bool_to_Prop; [|tauto].
+    apply test2_is_perm_false in E.
+    tauto.
 Qed.
 
 Lemma cycle1_entry :
