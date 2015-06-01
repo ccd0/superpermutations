@@ -79,7 +79,7 @@ Qed.
 
 Lemma rotate_plus :
   forall (A : Type) (m n : nat) (L : list A),
-    rotate n (rotate m L) = rotate (m + n) L.
+    rotate (m + n) L = rotate n (rotate m L).
 Proof.
   intros A m.
   induction m as [|m IH]; trivial.
@@ -93,7 +93,7 @@ Proof.
   intros A k L.
   induction k as [|k IH]; trivial.
   simpl.
-  rewrite <- rotate_plus, rotate_full.
+  rewrite rotate_plus, rotate_full.
   trivial.
 Qed.
 
@@ -112,7 +112,7 @@ Proof.
   destruct L as [|x M]; [symmetry; apply rotate_nil|].
   set (r := k mod (length (x :: M))).
   rewrite (div_mod k (length (x :: M))) by (simpl; auto).
-  rewrite <- rotate_plus, mult_comm, rotate_mult.
+  rewrite rotate_plus, mult_comm, rotate_mult.
   trivial.
 Qed.
 
@@ -137,7 +137,7 @@ Proof.
     set (r := (k + m) mod (S m)).
     set (q := (k + m) / (S m)).
     change (rotate (m - r) (rotate k (x :: M)) = x :: M).
-    rewrite rotate_plus.
+    rewrite <- rotate_plus.
     assert (r < S m) as B by (apply mod_bound_pos; omega).
     replace (k + (m - r)) with ((k + m) - r) by omega.
     rewrite (div_mod (k + m) (S m)) by auto.
@@ -179,7 +179,7 @@ Proof.
   intros A B k f L.
   induction k as [|k IH]; trivial.
   replace (S k) with (k + 1) by omega.
-  repeat rewrite <- rotate_plus.
+  repeat rewrite rotate_plus.
   rewrite IH.
   apply rotate1_map.
 Qed.
@@ -438,10 +438,10 @@ Proof.
   apply not_gt.
   intro G.
   apply (f_equal (rotate (length L - k2))) in ER.
-  repeat rewrite rotate_plus in ER.
+  repeat rewrite <- rotate_plus in ER.
   replace (k1 + (length L - k2)) with (length L + (k1 - k2)) in ER by omega.
   replace (k2 + (length L - k2)) with (length L) in ER by omega.
-  rewrite <- rotate_plus, rotate_full, EL, rotate_full in ER.
+  rewrite rotate_plus, rotate_full, EL, rotate_full in ER.
   apply (f_equal (@head A)) in ER.
   rewrite <- EH in ER.
   apply rotate_injective1 in ER; trivial; omega.

@@ -604,7 +604,7 @@ Lemma cycle2_member_rotate1 :
 Proof.
   intros P Q [x [j [k H]]].
   exists x, (j + rotate_neg 1 (length P)), k.
-  rewrite <- rotate_plus, <- H.
+  rewrite rotate_plus, <- H.
   symmetry.
   apply rotate_inv.
 Qed.
