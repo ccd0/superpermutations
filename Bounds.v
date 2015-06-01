@@ -361,6 +361,21 @@ Proof.
   omega.
 Qed.
 
+Lemma legal_nonempty :
+  forall (A : Type) (P : list A) (Ps : (list (list A))),
+    P <> [] -> legal (P :: Ps) -> Forall (fun Q => Q <> []) Ps.
+Proof.
+  intros A P Ps.
+  revert P.
+  induction Ps as [|Q Qs IH]; trivial.
+  intros P HP [H1 H2].
+  assert (Q <> []) as N.
+  - rewrite nonempty_length in *.
+    rewrite <- (legal_step_length _ P Q); trivial.
+  - constructor 2; trivial.
+    apply (IH Q); trivial.
+Qed.
+
 Lemma forced_rotate :
   forall (A : Type) (x y : A) (L : list A),
     Permutation (x :: L) (L ++ [y]) -> x = y.
@@ -616,9 +631,10 @@ Qed.
 
 Lemma cycle2_correct :
   forall (P : list nat) (Ps : list (list nat)),
-    P <> [] -> Forall (fun Q => Q <> []) Ps -> legal (P :: Ps) -> cycle2_member P (cycle2 P Ps).
+    P <> [] -> legal (P :: Ps) -> cycle2_member P (cycle2 P Ps).
 Proof.
-  intros P Ps HP HPs HL.
+  intros P Ps HP HL.
+  assert (Forall (fun Q => Q <> []) Ps) as HPs by (revert HP HL; apply legal_nonempty).
   revert P HP HL.
   induction Ps as [|Q Qs IH]; intros P HP HL; simpl.
   - destruct (is_perm P).
