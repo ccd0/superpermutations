@@ -50,6 +50,9 @@ Definition cycle_complete (P : list nat) (Ps : list (list nat)) : bool :=
 Definition cycle2_member (P Q : list nat) : Prop :=
   exists x j k : nat, P = rotate j (x :: rotate k Q).
 
+Definition fill_missing (L : list nat) : list nat :=
+  list_diff eq_nat_dec (seq 0 (S (length L))) L ++ L.
+
 Definition genFun (A B : Type) : Type :=
   A -> list A -> B.
 
@@ -639,6 +642,23 @@ Proof.
         rewrite removelast_correct.
         trivial.
     + apply cycle2_member_removelast, HP.
+Qed.
+
+Lemma fill_missing_correct :
+  forall (x : nat) (L : list nat),
+    is_perm (x :: L) = true -> x :: L = fill_missing L.
+Proof.
+  intros x L H.
+  unfold fill_missing.
+  fold ([x] ++ L).
+  apply (f_equal (fun M => M ++ L)).
+  symmetry.
+  apply Permutation_length_1_inv, Permutation_list_diff.
+  unfold is_perm in H.
+  apply to_bool_iff in H.
+  rewrite H.
+  symmetry.
+  apply Permutation_cons_append.
 Qed.
 
 Lemma test2_is_perm_false :

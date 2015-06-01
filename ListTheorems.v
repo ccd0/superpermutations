@@ -458,6 +458,47 @@ Proof.
     trivial.
 Defined.
 
+Definition remove1 {A : Type} eq_dec (x : A) (L : list A) : list A :=
+  match search_first eq_dec x L with
+  | inleft (existT M (exist N _)) => M ++ N
+  | inright _ => L
+  end.
+
+Fixpoint list_diff {A : Type} eq_dec (L M : list A) : list A :=
+  match M with
+  | [] => L
+  | x :: N => remove1 eq_dec x (list_diff eq_dec L N)
+  end.
+
+Lemma Permutation_remove1 :
+  forall (A : Type) eq_dec (x : A) (L M : list A),
+    Permutation (x :: L) M -> Permutation L (remove1 eq_dec x M).
+Proof.
+  intros A eq_dec x L M H.
+  unfold remove1.
+  destruct (search_first eq_dec x M) as [[M1 [M2 [HM _]]]|NI].
+  - subst M.
+    apply Permutation_cons_app_inv in H.
+    trivial.
+  - apply (Permutation_in x) in H.
+    + tauto.
+    + auto with *.
+Qed.
+
+Lemma Permutation_list_diff :
+  forall (A : Type) eq_dec (L M N : list A),
+    Permutation (L ++ M) N -> Permutation M (list_diff eq_dec N L).
+Proof.
+  intros A eq_dec L M N.
+  revert M.
+  induction L as [|x L IH]; trivial.
+  intros M H.
+  simpl.
+  apply Permutation_remove1, IH.
+  rewrite <- Permutation_middle.
+  trivial.
+Qed.
+
 Definition empty_dec {A : Type} (L : list A) :
   {L = []} + {L <> []}.
 Proof.
