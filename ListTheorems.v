@@ -56,13 +56,13 @@ Proof.
 Qed.
 
 Lemma skipn_length :
-  forall (A : Type) (k : nat) (L : list A), length (skipn k L) = length L - min k (length L).
+  forall (A : Type) (k : nat) (L : list A), length (skipn k L) = length L - k.
 Proof.
   intros A k L.
   apply (plus_reg_l _ _ (min k (length L))).
   rewrite <- firstn_length at 1.
   rewrite <- app_length, firstn_skipn.
-  auto with *.
+  destruct (le_dec k (length L)) as [H|H]; [rewrite min_l|rewrite min_r]; omega.
 Qed.
 
 Lemma in_seq :

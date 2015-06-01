@@ -414,7 +414,7 @@ Proof.
   rewrite <- firstn_length, rotate_swap in ER.
   destruct (skipn k L) as [|y M] eqn:E.
   - rewrite empty_length, skipn_length in E.
-    rewrite min_l in E; omega.
+    omega.
   - simpl in ER.
     injection ER as ER'.
     subst y.
