@@ -55,6 +55,24 @@ Proof.
   trivial.
 Qed.
 
+Lemma firstn_map :
+  forall (A B : Type) (k : nat) (f : A -> B) (L : list A),
+    firstn k (map f L) = map f (firstn k L).
+Proof.
+  intros A B k f.
+  induction k as [|k IH]; intros [|x L]; trivial.
+  simpl.
+  rewrite IH.
+  trivial.
+Qed.
+
+Lemma skipn_correct :
+  forall (A : Type) (L M : list A), skipn (length L) (L ++ M) = M.
+Proof.
+  intros A L M.
+  induction L as [|x L IH]; trivial.
+Qed.
+
 Lemma skipn_length :
   forall (A : Type) (k : nat) (L : list A), length (skipn k L) = length L - k.
 Proof.
@@ -63,6 +81,36 @@ Proof.
   rewrite <- firstn_length at 1.
   rewrite <- app_length, firstn_skipn.
   destruct (le_dec k (length L)) as [H|H]; [rewrite min_l|rewrite min_r]; omega.
+Qed.
+
+Lemma skipn_map :
+  forall (A B : Type) (k : nat) (f : A -> B) (L : list A),
+    skipn k (map f L) = map f (skipn k L).
+Proof.
+  intros A B k f.
+  induction k as [|k IH]; intros [|x L]; simpl; trivial.
+Qed.
+
+Lemma nth_skipn :
+  forall (A : Type) (n : nat) (L : list A) (d : A),
+    nth n L d = hd d (skipn n L).
+Proof.
+  intros A n L d.
+  revert L.
+  induction n as [|n IH]; intros [|x L]; simpl; trivial.
+Qed.
+
+Lemma combine_nth2 :
+  forall (A B : Type) (L : list A) (M : list B) (n : nat) (x : A) (y : B),
+    n < length L -> n < length M -> nth n (combine L M) (x, y) = (nth n L x, nth n M y).
+Proof.
+  intros A B L M n x y.
+  revert L M.
+  induction n as [|n IH]; intros L M HL LM;
+    (destruct L as [|v L]; [simpl in *; omega|]);
+    (destruct M as [|w M]; [simpl in *; omega|]);
+    trivial.
+  apply IH; auto with *.
 Qed.
 
 Lemma in_seq :
@@ -93,6 +141,17 @@ Proof.
   rewrite Hf by auto with *.
   rewrite IH by auto with *.
   trivial.
+Qed.
+
+Lemma flat_map_app :
+  forall (A B : Type) (f : A -> list B) (L M : list A),
+    flat_map f (L ++ M) = flat_map f L ++ flat_map f M.
+Proof.
+  intros A B f L M.
+  induction L as [|x L IH]; trivial.
+  simpl.
+  rewrite IH.
+  auto with *.
 Qed.
 
 Lemma filter_length :
@@ -247,6 +306,22 @@ Proof.
       repeat rewrite app_length.
       simpl.
       auto with *.
+Qed.
+
+Lemma Permutation_incl_left :
+  forall (A : Type) (L M N : list A),
+    Permutation L M -> (incl L N <-> incl M N).
+Proof.
+  intros A L M N HP.
+  split; intros H x Hx; apply H; revert Hx; apply Permutation_in; auto with *.
+Qed.
+
+Lemma Permutation_incl_right :
+  forall (A : Type) (L M N : list A),
+    Permutation L M -> (incl N L <-> incl N M).
+Proof.
+  intros A L M N HP.
+  split; intros H x Hx; [|symmetry in HP]; apply (Permutation_in _ HP); auto.
 Qed.
 
 Lemma incl_drop :
@@ -416,6 +491,52 @@ Proof.
   destruct H as [H _].
   revert H.
   apply in_combine_r.
+Qed.
+
+Lemma in_select :
+  forall (A : Type) (x d : A) (L : list bool) (M : list A),
+    In x (select L M) <-> (exists n : nat, nth n L false = true /\ nth n M d = x /\ n < length M).
+Proof.
+  intros A x d L M.
+  unfold select.
+  rewrite in_map_iff.
+  split.
+  - intros [[b y] [E H]].
+    simpl in E.
+    subst y.
+    apply filter_In in H.
+    destruct H as [H E].
+    simpl in E.
+    subst b.
+    apply in_split in H.
+    destruct H as [N [P E]].
+    pose (f_equal (fun Q => nth (length N) Q (false, d)) E) as H.
+    simpl in H.
+    pose (f_equal (@length (bool * A)) E) as HL.
+    rewrite combine_length, app_length in HL.
+    simpl in HL.
+    assert (min (length L) (length M) <= length L) as HM1 by auto with *.
+    assert (min (length L) (length M) <= length M) as HM2 by auto with *.
+    rewrite combine_nth2 in H by omega.
+    rewrite app_nth2 in H by auto.
+    replace (length N - length N) with 0 in H by omega.
+    injection H as E1 E2.
+    exists (length N).
+    auto with *.
+  - intros [n [E1 [E2 H2]]].
+    exists (true, x).
+    split; trivial.
+    apply filter_In.
+    split; trivial.
+    rewrite <- E1, <- E2.
+    destruct (le_lt_dec (length L) n) as [H1|H1].
+    + apply (nth_overflow _ false) in H1.
+      rewrite H1 in E1.
+      discriminate.
+    + rewrite <- combine_nth2; trivial.
+      apply nth_In.
+      rewrite combine_length.
+      apply NPeano.Nat.min_glb_lt; trivial.
 Qed.
 
 Definition search_first

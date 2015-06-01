@@ -146,6 +146,16 @@ Proof.
     apply rotate_mult.
 Qed.
 
+Lemma rotate_move :
+  forall (A : Type) (k : nat) (L M : list A),
+    L = rotate k M -> M = rotate (rotate_neg k (length M)) L.
+Proof.
+  intros A k L M H.
+  subst L.
+  rewrite rotate_inv.
+  trivial.
+Qed.
+
 Lemma rotate_cancel :
   forall (A : Type) (k : nat) (L M : list A),
     rotate k L = rotate k M -> L = M.
@@ -196,6 +206,20 @@ Proof.
   destruct L; trivial.
   symmetry.
   apply Permutation_cons_append.
+Qed.
+
+Lemma NoDup_rotate :
+  forall (A : Type) (k : nat) (L : list A), NoDup L <-> NoDup (rotate k L).
+Proof.
+  intros A k L.
+  split; apply Permutation_NoDup; [symmetry|]; apply Permutation_rotate.
+Qed.
+
+Lemma in_rotate :
+  forall (A : Type) (x : A) (k : nat) (L : list A), In x (rotate k L) <-> In x L.
+Proof.
+  intros A x k L.
+  split; apply Permutation_in; [|symmetry]; apply Permutation_rotate.
 Qed.
 
 Lemma rotations_rotations' :

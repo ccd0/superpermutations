@@ -102,10 +102,13 @@ Fixpoint cycle2 (P : list nat) (Ps : list (list nat)) : list nat :=
   else
     removelast P.
 
+Definition valid_cycle2 (n : nat) (C : list nat) :=
+  to_bool (NoDup_dec eq_nat_dec C)
+    && to_bool (incl_dec eq_nat_dec C (seq 0 n)).
+
 Definition test2' (P : list nat) (Ps : list (list nat)) : bool :=
   let C := cycle2 P Ps in
-    to_bool (NoDup_dec eq_nat_dec C)
-      && to_bool (incl_dec eq_nat_dec C (seq 0 (length P)))
+    valid_cycle2 (length P) C
       && negb (is_visited C (flat_map rotations (assemble cycle2 Ps))).
 
 Definition test2 (P : list nat) (Ps : list (list nat)) : bool :=
@@ -145,6 +148,14 @@ Proof.
   intros n P H.
   rewrite <- (seq_length n 0).
   apply Permutation_length, H.
+Qed.
+
+Lemma Permutation_seq_NoDup :
+  forall (n : nat) (P : list nat), Permutation (seq 0 n) P -> NoDup P.
+Proof.
+  intros n P H.
+  apply (Permutation_NoDup _ (seq 0 n)); trivial.
+  apply NoDup_seq.
 Qed.
 
 Lemma Permutation_is_perm :
@@ -282,6 +293,22 @@ Proof.
   trivial.
 Qed.
 
+Lemma skipn_assemble :
+  forall (A B : Type) (f : genFun A B) (k : nat) (L : list A),
+    skipn k (assemble f L) = assemble f (skipn k L).
+Proof.
+  intros A B f k.
+  induction k as [|k IH]; intros [|x L]; simpl; trivial.
+Qed.
+
+Lemma assemble_length :
+  forall (A B : Type) (f : genFun A B) (L : list A),
+    length (assemble f L) = length L.
+Proof.
+  intros A B f L.
+  induction L; simpl; auto.
+Qed.
+
 Lemma chosen_incl :
   forall (A : Type) (f : testFun A) (Ps : list A),
     incl (chosen f Ps) Ps.
@@ -359,6 +386,27 @@ Proof.
   rewrite app_length.
   simpl.
   omega.
+Qed.
+
+Lemma legal_length :
+  forall (A : Type) (n : nat) (P : list A) (Ps : (list (list A))),
+    legal (P :: Ps) -> length P = n ->
+      forall Q : list A, In Q Ps -> length Q = n.
+Proof.
+  intros A n P Ps.
+  revert P.
+  induction Ps as [|R Rs IH]; intros P H1 H2 Q H3.
+  - simpl in H3.
+    tauto.
+  - destruct H3 as [H3|H3].
+    + subst R.
+      simpl in H1.
+      rewrite <- (legal_step_length _ P); tauto.
+    + apply (IH R).
+      * apply (legal_app _ [P]), H1.
+      * simpl in H1.
+        rewrite <- (legal_step_length _ P); tauto.
+      * trivial.
 Qed.
 
 Lemma legal_nonempty :
@@ -663,20 +711,202 @@ Proof.
 Qed.
 
 Lemma fill_missing_correct :
-  forall (x : nat) (L : list nat),
-    is_perm (x :: L) = true -> x :: L = fill_missing L.
+  forall (n x : nat) (L : list nat),
+    Permutation (seq 0 n) (x :: L) -> x :: L = fill_missing L.
 Proof.
-  intros x L H.
+  intros n x L H.
   unfold fill_missing.
   fold ([x] ++ L).
   apply (f_equal (fun M => M ++ L)).
   symmetry.
   apply Permutation_length_1_inv, Permutation_list_diff.
-  unfold is_perm in H.
-  apply to_bool_iff in H.
-  rewrite H.
-  symmetry.
-  apply Permutation_cons_append.
+  rewrite <- Permutation_cons_append, <- H.
+  apply Permutation_length in H.
+  simpl in H.
+  rewrite <- H, seq_length.
+  trivial.
+Qed.
+
+Lemma valid_cycle2_Permutation :
+  forall (n j k x : nat) (P C : list nat),
+    Permutation (seq 0 n) P ->
+    P = rotate j (x :: rotate k C) ->
+      valid_cycle2 n C = true.
+Proof.
+  intros n j k x P Q H E.
+  unfold valid_cycle2.
+  autorewrite with bool_to_Prop.
+  split.
+  - apply (NoDup_rotate _ k).
+    assert (NoDup P) as ND by apply (Permutation_seq_NoDup n), H.
+    rewrite E in ND.
+    apply NoDup_rotate in ND.
+    inversion ND.
+    trivial.
+  - intros y Hy.
+    apply (@Permutation_in _ P); [auto with *|].
+    rewrite E.
+    apply in_rotate.
+    right.
+    apply in_rotate.
+    trivial.
+Qed.
+
+Lemma valid_cycle2_rotate :
+  forall (n k : nat) (C : list nat),
+    valid_cycle2 n (rotate k C) = true <-> valid_cycle2 n C = true.
+Proof.
+  intros n k C.
+  unfold valid_cycle2.
+  autorewrite with bool_to_Prop.
+  rewrite <- NoDup_rotate.
+  rewrite (Permutation_incl_left _ _ C) by apply Permutation_rotate.
+  tauto.
+Qed.
+
+Lemma select2'_complete1 :
+  forall (n : nat) (P : list nat) (Qs : list (list nat)),
+    Permutation (seq 0 n) P ->
+    P <> [] ->
+    legal (P :: Qs) -> 
+    In (cycle2 P Qs) (flat_map rotations (assemble cycle2 Qs)) ->
+    In P (flat_map rotations (map fill_missing (flat_map rotations
+      (select (assemble test2' Qs) (assemble cycle2 Qs))
+    ))).
+Proof.
+  intros n P Qs H1 H2 H3 H4.
+  destruct (cycle2_correct _ _ H2 H3) as [x [j [k E]]].
+  assert (length P = n) as HL by (symmetry; apply Permutation_seq_length, H1).
+  apply in_flat_map.
+  exists (x :: rotate k (cycle2 P Qs)).
+  split; [|apply in_rotations; exists j; trivial].
+  apply in_map_iff.
+  exists (rotate k (cycle2 P Qs)).
+  rewrite (fill_missing_correct n) by (
+    rewrite <- (Permutation_rotate _ j (x :: rotate k (cycle2 P Qs))), <- E; trivial
+  ).
+  split; trivial.
+  apply in_flat_map in H4.
+  destruct H4 as [C [H5 H6]].
+  apply in_flat_map.
+  apply in_rotations in H6.
+  destruct H6 as [m H6].
+  set (Bs :=
+    map
+      (fun C' => to_bool (in_dec (list_eq_dec eq_nat_dec) C' (rotations C)))
+      (assemble cycle2 Qs)
+  ).
+  assert (In true Bs) as HB by (
+    apply in_map_iff;
+    exists C;
+    rewrite to_bool_iff;
+    split; [apply rotations_self|trivial]
+  ).
+  destruct (search_last bool_dec true Bs) as [[Bs1 [Bs2 [H7 H8]]]|HN]; [|tauto].
+  apply (f_equal (skipn (length Bs1))) in H7.
+  unfold Bs in H7.
+  rewrite skipn_map, skipn_assemble, skipn_correct in H7.
+  set (Rs := skipn (length Bs1) Qs) in *.
+  destruct Rs as [|R Ss] eqn:ER; simpl in H7; [discriminate|].
+  exists (cycle2 R Ss).
+  injection H7 as H9 H10.
+  rewrite <- H9, in_map_iff in H8.
+  rewrite to_bool_iff, in_rotations in H10.
+  destruct H10 as [i H10].
+  split.
+  - rewrite (in_select _ _ []).
+    exists (length Bs1).
+    repeat rewrite nth_skipn, skipn_assemble.
+    fold Rs.
+    rewrite ER.
+    simpl.
+    unfold test2', is_visited.
+    autorewrite with bool_to_Prop.
+    repeat split.
+    + rewrite (legal_length _ n P Qs); trivial.
+      * rewrite H10, valid_cycle2_rotate, <- (valid_cycle2_rotate _ m), <- H6.
+        apply (valid_cycle2_Permutation n j k x P); trivial.
+      * rewrite <- (firstn_skipn (length Bs1)).
+        fold Rs.
+        rewrite ER.
+        auto with *.
+    + contradict H8.
+      apply in_flat_map in H8.
+      destruct H8 as [C' [H11 H12]].
+      exists C'.
+      rewrite to_bool_iff.
+      split; trivial.
+      apply in_rotations in H12.
+      destruct H12 as [h H12].
+      apply rotate_move in H12.
+      rewrite H12, H10, <- rotate_plus.
+      apply in_rotations.
+      exists (i + rotate_neg h (length C')).
+      auto.
+    + assert (length Rs = length Qs - length Bs1) as H13 by apply skipn_length.
+      rewrite ER in H13.
+      simpl in H13.
+      rewrite assemble_length.
+      omega.
+  - apply in_rotations.
+    apply rotate_move in H10.
+    rewrite H6, H10.
+    repeat rewrite <- rotate_plus.
+    exists (rotate_neg i (length C) + (m + k)).
+    trivial.
+Qed.
+
+Lemma select2'_complete :
+  forall (n : nat) (Ps : list (list nat)),
+    n >= 1 ->
+    legal Ps ->
+    all_perms' n Ps ->
+    all_perms' n (
+      flat_map rotations (map fill_missing (flat_map rotations (
+        select (assemble test2' Ps) (assemble cycle2 Ps)
+      )))
+    ).
+Proof.
+  intros n Ps Hn HL HA P HP.
+  specialize (HA P HP).
+  induction Ps as [|Q Qs IH]; trivial.
+  destruct HA as [HA|HA].
+  - subst Q.
+    simpl.
+    assert (P <> []) as N by (apply nonempty_length; apply Permutation_seq_length in HP; omega).
+    destruct (cycle2_correct _ _ N HL) as [x [j [k E]]].
+    destruct (test2' P Qs) eqn:HT.
+    + apply in_flat_map.
+      exists (x :: rotate k (cycle2 P Qs)).
+      split.
+      * apply in_map_iff.
+        exists (rotate k (cycle2 P Qs)).
+        rewrite (fill_missing_correct n) by (
+          rewrite <- (Permutation_rotate _ j (x :: rotate k (cycle2 P Qs))), <- E; trivial
+        ).
+        split; trivial.
+        simpl.
+        rewrite in_app_iff, in_rotations.
+        left.
+        exists k.
+        trivial.
+      * apply in_rotations.
+        exists j.
+        trivial.
+    + unfold test2', is_visited in HT.
+      autorewrite with bool_to_Prop in HT.
+      destruct HT as [HT|HT].
+      * contradict HT.
+        apply not_false_iff_true.
+        rewrite <- (Permutation_seq_length n P) by trivial.
+        apply (valid_cycle2_Permutation n j k x P); trivial.
+      * rewrite select_cons.
+        apply (select2'_complete1 n); trivial.
+  - simpl.
+    rewrite select_cons, flat_map_app, map_app, flat_map_app, in_app_iff.
+    right.
+    apply IH; trivial.
+    apply (legal_app _ [Q]), HL.
 Qed.
 
 Lemma test2_is_perm_false :
@@ -773,7 +1003,7 @@ Proof.
     assert (In (x :: L) (rotations (rotate 1 (x :: L)))) as H4 by apply in_rotations_rotate.
     specialize (H1c (x :: L) H4).
     destruct H1c as [H1c|H1c]; trivial.
-    apply Permutation_NoDup in H1a; [|apply NoDup_seq].
+    apply Permutation_seq_NoDup in H1a.
     rewrite H1c in H1a.
     destruct L as [|y L].
     * tauto.
@@ -792,7 +1022,7 @@ Proof.
   unfold andt.
   destruct (test2 P (Q :: Rs)) eqn:H2; [|apply andb_false_r].
   assert (is_perm P = false) as H0' by (revert H2; apply test2_is_perm_false).
-  unfold test2, test2', is_visited in H2.
+  unfold test2, test2', valid_cycle2, is_visited in H2.
   autorewrite with bool_to_Prop in H2.
   destruct H2 as [[[H21 H22] H23] _].
   simpl in H21, H22, H23.
@@ -837,7 +1067,7 @@ Proof.
         intros w [K1 [K2|]]; trivial.
         destruct K1 as [K1|K1]; [omega|].
         subst w.
-        apply Permutation_NoDup in H23; [|apply NoDup_seq].
+        apply Permutation_seq_NoDup in H23.
         apply NoDup_remove_1 in H23.
         rewrite app_nil_r in H23.
         assert (Permutation (z :: M) (M ++ [z])) as HP by apply Permutation_cons_append.
