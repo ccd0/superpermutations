@@ -15,7 +15,7 @@ Definition all_perms (n : nat) (L : list nat) : Prop :=
 Definition all_perms' (n : nat) (Ps : list (list nat)) : Prop :=
   forall P, Permutation (seq 0 n) P -> In P Ps.
 
-Fixpoint n_strings (n : nat) (L : list nat) : list (list nat) :=
+Fixpoint n_strings {A : Type} (n : nat) (L : list A) : list (list A) :=
   if le_dec n (length L) then
     match L with
     | [] => [[]]
@@ -23,10 +23,10 @@ Fixpoint n_strings (n : nat) (L : list nat) : list (list nat) :=
     end
   else [].
 
-Definition legal_step (P Q : list nat) : Prop :=
-  exists (x y : nat) (L : list nat), P = x :: L /\ Q = L ++ [y].
+Definition legal_step {A : Type} (P Q : list A) : Prop :=
+  exists (x y : A) (L : list A), P = x :: L /\ Q = L ++ [y].
 
-Fixpoint legal (Ps : list (list nat)) : Prop :=
+Fixpoint legal {A : Type} (Ps : list (list A)) : Prop :=
   match Ps with
   | [] => True
   | P :: Qs => match Qs with
@@ -158,22 +158,22 @@ Proof.
 Qed.
 
 Lemma in_n_strings1 :
-  forall (n : nat) (L P : list nat),
+  forall (A : Type) (n : nat) (L P : list A),
     ~ n <= length L -> (False <-> substring P L /\ length P = n).
 Proof.
-  intros n L P H.
+  intros A n L P H.
   split; [tauto|].
   intros [[LH [LT H1]] E].
-  apply (f_equal (@length nat)) in H1.
+  apply (f_equal (@length A)) in H1.
   repeat rewrite app_length in H1.
   omega.
 Qed.
 
 Lemma in_n_strings :
-  forall (n : nat) (L P : list nat),
+  forall (A : Type) (n : nat) (L P : list A),
     In P (n_strings n L) <-> substring P L /\ length P = n.
 Proof.
-  intros n L P.
+  intros A n L P.
   induction L as [|x L IH]; simpl.
   - destruct (le_dec n 0) as [Len|Len]; [|apply in_n_strings1; trivial].
     simpl.
@@ -217,9 +217,9 @@ Proof.
 Qed.
 
 Lemma n_strings_length :
-  forall (n : nat) (L : list nat), length (n_strings n L) = length L + 1 - n.
+  forall (A : Type) (n : nat) (L : list A), length (n_strings n L) = length L + 1 - n.
 Proof.
-  intros n L.
+  intros A n L.
   induction L as [|x L IH]; simpl.
   - destruct (le_dec n 0); destruct n; trivial; omega.
   - destruct (le_dec n (S (length L))) as [Len|Len]; destruct n; simpl; omega.
@@ -237,9 +237,9 @@ Proof.
 Qed.
 
 Lemma n_strings_legal :
-  forall (n : nat) (L : list nat), n >= 1 -> legal (n_strings n L).
+  forall (A : Type) (n : nat) (L : list A), n >= 1 -> legal (n_strings n L).
 Proof.
-  intros n L H.
+  intros A n L H.
   induction L as [|x L IH]; simpl.
   - destruct (le_dec n 0) as [K|K]; [omega|apply I].
   - destruct (le_dec n (S (length L))) as [K|K]; [|apply I].
@@ -248,7 +248,7 @@ Proof.
     + simpl in IH.
       destruct (le_dec n (S (length L))) as [K2|K2]; [|trivial].
       split; [|trivial].
-      exists x, (last (firstn n (y :: L)) 0), (removelast (firstn n (y :: L))).
+      exists x, (last (firstn n (y :: L)) y), (removelast (firstn n (y :: L))).
       destruct n as [|n]; [omega|].
       split.
       * rewrite removelast_firstn; trivial.
@@ -257,9 +257,9 @@ Proof.
 Qed.
 
 Lemma legal_app :
-  forall L M : list (list nat), legal (L ++ M) -> legal M.
+  forall (A : Type) (L M : list (list A)), legal (L ++ M) -> legal M.
 Proof.
-  intros L M H.
+  intros A L M H.
   induction L; trivial.
   simpl in H.
   destruct (L ++ M); tauto.
@@ -337,19 +337,19 @@ Proof.
 Qed.
 
 Lemma score_bound :
-  forall (n : nat) (f : testFun (list nat)) (L : list nat),
+  forall (A : Type) (n : nat) (f : testFun (list A)) (L : list A),
     score f (n_strings n L) <= length L + 1 - n.
 Proof.
-  intros n f L.
+  intros A n f L.
   unfold score, chosen.
   rewrite select_length, n_strings_length.
   trivial.
 Qed.
 
 Lemma legal_step_length :
-  forall P Q : list nat, legal_step P Q -> length P = length Q.
+  forall (A : Type) (P Q : list A), legal_step P Q -> length P = length Q.
 Proof.
-  intros P Q [x [y [L [HP HQ]]]].
+  intros A P Q [x [y [L [HP HQ]]]].
   subst P Q.
   rewrite app_length.
   simpl.
@@ -368,9 +368,9 @@ Proof.
 Qed.
 
 Lemma legal_step_rotate1 :
-  forall P Q : list nat, legal_step P Q -> Permutation P Q -> Q = rotate1 P.
+  forall (A : Type) (P Q : list A), legal_step P Q -> Permutation P Q -> Q = rotate1 P.
 Proof.
-  intros P Q [x [y [L [HP HQ]]]] HPQ.
+  intros A P Q [x [y [L [HP HQ]]]] HPQ.
   subst P Q.
   apply forced_rotate in HPQ.
   subst y.
@@ -503,7 +503,7 @@ Proof.
   autorewrite with bool_to_Prop in H, K.
   destruct H as [H1 H2].
   destruct K as [[K1 _] K2].
-  rewrite <- (legal_step_length P Q HL) in K1.
+  rewrite <- (legal_step_length _ P Q HL) in K1.
   rewrite H1 in K1.
   apply legal_step_rotate1 in K1; [|trivial].
   contradict H2.
@@ -626,10 +626,10 @@ Proof.
       specialize (IH HQs Q HQ HL).
       destruct (is_perm Q) eqn:HTQ.
       * apply cycle2_member_rotate1.
-        rewrite <- (legal_step_rotate1 _ Q); trivial.
+        rewrite <- (legal_step_rotate1 _ _ Q); trivial.
         unfold is_perm in HTP, HTQ.
         autorewrite with bool_to_Prop in HTP, HTQ.
-        pose (legal_step_length P Q HS) as EL.
+        pose (legal_step_length _ P Q HS) as EL.
         rewrite <- EL in HTQ.
         apply (perm_trans (l' := (seq 0 (length P)))); auto with *.
       * rewrite cycle2_is_perm_false by trivial.
@@ -773,7 +773,7 @@ Proof.
   exists L.
   split.
   - apply (old_cycle2 y); trivial.
-    apply (legal_app [L ++ [y]]), HL.
+    apply (legal_app _ [L ++ [y]]), HL.
   - assert (L = removelast L ++ [last L 0]) as E by apply app_removelast_last, HN.
     set (M := removelast L) in E.
     set (z := last L 0) in E.
@@ -849,7 +849,7 @@ Proof.
   rewrite score_cons.
   rewrite andt_tests012.
   - apply IH.
-    + apply (legal_app [P]), HL.
+    + apply (legal_app _ [P]), HL.
     + inversion Hn'.
       trivial.
   - apply HL.
@@ -876,7 +876,7 @@ Theorem bound1 :
 Proof.
   intros n L H.
   rewrite <- (score0_final n L) by trivial.
-  pose (score_bound n test0 L) as IE.
+  pose (score_bound _ n test0 L) as IE.
   pose (bound0 n L H) as B0.
   omega.
 Qed.
