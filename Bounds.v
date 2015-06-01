@@ -823,6 +823,40 @@ Proof.
         trivial.
 Qed.
 
+Lemma andt_tests012 :
+  forall (P : list nat) (Qs : list (list nat)),
+    legal (P :: Qs) -> length P >= 2 -> andt (ort test0 test1) test2 P Qs = false.
+Proof.
+  intros P Qs HL Hn.
+  unfold andt, ort.
+  rewrite andb_orb_distrib_l.
+  fold (andt test0 test2 P Qs).
+  fold (andt test1 test2 P Qs).
+  rewrite andt_tests02, andt_tests12; trivial.
+Qed.
+
+Lemma score_andt_tests012 :
+  forall (n : nat) (L : list nat),
+    n >= 2 -> score (andt (ort test0 test1) test2) (n_strings n L) = 0.
+Proof.
+  intros n L Hn.
+  set (Ps := n_strings n L).
+  assert (legal Ps) as HL by (apply n_strings_legal; omega).
+  assert (Forall (fun P => length P = n) Ps) as Hn' by (
+    apply Forall_forall; intros P H; apply in_n_strings in H; tauto
+  ).
+  induction Ps as [|P Qs IH]; trivial.
+  rewrite score_cons.
+  rewrite andt_tests012.
+  - apply IH.
+    + apply (legal_app [P]), HL.
+    + inversion Hn'.
+      trivial.
+  - apply HL.
+  - rewrite Forall_forall in Hn'.
+    rewrite Hn'; auto with *.
+Qed.
+
 Theorem bound0 :
   forall (n : nat) (L : list nat),
     all_perms n L -> length L >= n.
