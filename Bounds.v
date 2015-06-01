@@ -102,12 +102,14 @@ Fixpoint cycle2 (P : list nat) (Ps : list (list nat)) : list nat :=
   else
     removelast P.
 
-Definition test2 (P : list nat) (Ps : list (list nat)) : bool :=
+Definition test2' (P : list nat) (Ps : list (list nat)) : bool :=
   let C := cycle2 P Ps in
     to_bool (NoDup_dec eq_nat_dec C)
       && to_bool (incl_dec eq_nat_dec C (seq 0 (length P)))
-      && negb (is_visited C (flat_map rotations (assemble cycle2 Ps)))
-      && negb (to_bool (empty_dec Ps)).
+      && negb (is_visited C (flat_map rotations (assemble cycle2 Ps))).
+
+Definition test2 (P : list nat) (Ps : list (list nat)) : bool :=
+  test2' P Ps && negb (to_bool (empty_dec Ps)).
 
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
@@ -666,7 +668,7 @@ Lemma test2_is_perm_false :
     test2 P Qs = true -> is_perm P = false.
 Proof.
   intros P Qs H.
-  unfold test2 in H.
+  unfold test2, test2' in H.
   destruct Qs as [|Q Rs]; simpl in H.
   - rewrite andb_false_r in H.
     discriminate.
@@ -774,7 +776,7 @@ Proof.
   unfold andt.
   destruct (test2 P (Q :: Rs)) eqn:H2; [|apply andb_false_r].
   assert (is_perm P = false) as H0' by (revert H2; apply test2_is_perm_false).
-  unfold test2, is_visited in H2.
+  unfold test2, test2', is_visited in H2.
   autorewrite with bool_to_Prop in H2.
   destruct H2 as [[[H21 H22] H23] _].
   simpl in H21, H22, H23.
