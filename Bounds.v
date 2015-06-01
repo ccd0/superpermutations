@@ -491,6 +491,45 @@ Proof.
     apply in_rotations_rotate.
 Qed.
 
+Lemma andt_tests01 :
+  forall (P Q : list nat) (Rs : list (list nat)),
+    legal_step P Q -> andt test0 test1 P (Q :: Rs) = false.
+Proof.
+  intros P Q Rs HL.
+  unfold andt.
+  destruct (test0 P (Q :: Rs)) eqn:H; [|tauto].
+  destruct (test1 P (Q :: Rs)) eqn:K; [|tauto].
+  unfold test1, shift, test1', test0, is_perm, is_visited, cycle_complete in H, K.
+  autorewrite with bool_to_Prop in H, K.
+  destruct H as [H1 H2].
+  destruct K as [[K1 _] K2].
+  rewrite <- (legal_step_length P Q HL) in K1.
+  rewrite H1 in K1.
+  apply legal_step_rotate1 in K1; [|trivial].
+  contradict H2.
+  apply K2.
+  subst Q.
+  change (In P (rotations (rotate 1 P))).
+  apply in_rotations_rotate.
+Qed.
+
+Lemma score_andt_tests01 :
+  forall (n : nat) (L : list nat), n >= 1 -> score (andt test0 test1) (n_strings n L) = 0.
+Proof.
+  intros n L Hn.
+  set (Ps := n_strings n L).
+  assert (legal Ps) as HL by apply n_strings_legal, Hn.
+  induction Ps as [|P Qs IH]; trivial.
+  destruct Qs as [|Q Rs].
+  - rewrite score_cons.
+    unfold andt, test1, shift.
+    destruct (test0 P []); trivial.
+  - rewrite score_cons.
+    destruct HL as [HS HL].
+    rewrite andt_tests01 by trivial.
+    tauto.
+Qed.
+
 Lemma score1'_final :
   forall (n : nat) (L : list nat),
     n >= 1 -> all_perms n L -> score test1' (n_strings n L) >= fact (n - 1).
@@ -532,45 +571,6 @@ Proof.
   unfold test1.
   rewrite score_shift, score_cons.
   destruct (test1' P Ps); auto.
-Qed.
-
-Lemma andt_tests01 :
-  forall (P Q : list nat) (Rs : list (list nat)),
-    legal_step P Q -> andt test0 test1 P (Q :: Rs) = false.
-Proof.
-  intros P Q Rs HL.
-  unfold andt.
-  destruct (test0 P (Q :: Rs)) eqn:H; [|tauto].
-  destruct (test1 P (Q :: Rs)) eqn:K; [|tauto].
-  unfold test1, shift, test1', test0, is_perm, is_visited, cycle_complete in H, K.
-  autorewrite with bool_to_Prop in H, K.
-  destruct H as [H1 H2].
-  destruct K as [[K1 _] K2].
-  rewrite <- (legal_step_length P Q HL) in K1.
-  rewrite H1 in K1.
-  apply legal_step_rotate1 in K1; [|trivial].
-  contradict H2.
-  apply K2.
-  subst Q.
-  change (In P (rotations (rotate 1 P))).
-  apply in_rotations_rotate.
-Qed.
-
-Lemma score_andt_tests01 :
-  forall (n : nat) (L : list nat), n >= 1 -> score (andt test0 test1) (n_strings n L) = 0.
-Proof.
-  intros n L Hn.
-  set (Ps := n_strings n L).
-  assert (legal Ps) as HL by apply n_strings_legal, Hn.
-  induction Ps as [|P Qs IH]; trivial.
-  destruct Qs as [|Q Rs].
-  - rewrite score_cons.
-    unfold andt, test1, shift.
-    destruct (test0 P []); trivial.
-  - rewrite score_cons.
-    destruct HL as [HS HL].
-    rewrite andt_tests01 by trivial.
-    tauto.
 Qed.
 
 Lemma cycle2_is_perm_false :
