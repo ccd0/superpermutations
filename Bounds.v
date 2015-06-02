@@ -911,6 +911,122 @@ Proof.
     apply (legal_app _ [Q]), HL.
 Qed.
 
+Lemma cycle2_length :
+  forall (n : nat) (P : list nat) (Ps : list (list nat)),
+    (forall Q : list nat, In Q (P :: Ps) -> length Q = n) -> length (cycle2 P Ps) = n - 1.
+Proof.
+  intros n P Ps.
+  revert P.
+  induction Ps as [|Q Qs IH]; simpl; intros R H; destruct (is_perm R).
+  - rewrite tail_length, H; tauto.
+  - rewrite removelast_length, H; tauto.
+  - rewrite IH; auto.
+  - rewrite removelast_length, H; tauto.
+Qed.
+
+Lemma chosen_cycles2_length :
+  forall (n : nat) (C : list nat) (Ps : list (list nat)),
+    (forall P, In P Ps -> length P = n) ->
+    In C (chosen_cycles2 Ps) ->
+      length C = n - 1.
+Proof.
+  intros n C Ps HPs.
+  unfold chosen_cycles2.
+  rewrite (in_select _ _ []).
+  intros [k [H2 [H _]]].
+  rewrite nth_skipn, skipn_assemble in H, H2.
+  destruct (skipn k Ps) as [|Q Qs] eqn:E; [discriminate|].
+  simpl in H.
+  subst C.
+  rewrite (cycle2_length n); trivial.
+  rewrite <- E.
+  intros R HR.
+  apply skipn_incl in HR.
+  auto.
+Qed.
+
+Lemma valid_cycle2_fill_missing_length :
+  forall (n : nat) (C : list nat),
+    n >= 1 ->
+    valid_cycle2 n C = true ->
+    length C = n - 1 ->
+      length (fill_missing C) = n.
+Proof.
+  intros n C Hn HV HL.
+  unfold valid_cycle2 in HV.
+  autorewrite with bool_to_Prop in HV.
+  unfold fill_missing.
+  rewrite app_length.
+  rewrite HL.
+  replace (S (n - 1)) with n by omega.
+  rewrite list_diff_NoDup_length by tauto.
+  rewrite HL, seq_length.
+  omega.
+Qed.
+
+Lemma mapped_cycles2_length :
+  forall (n : nat) (Q : list nat) (Ps : list (list nat)),
+    n >= 1 ->
+    (forall P, In P Ps -> length P = n) ->
+    In Q (map fill_missing (flat_map rotations (chosen_cycles2 Ps))) ->
+      length Q = n.
+Proof.
+  intros n Q Ps Hn HPs.
+  rewrite in_map_iff.
+  intros [C [E H]].
+  subst Q.
+  rewrite in_flat_map in H.
+  destruct H as [C' [H H2]].
+  apply in_rotations in H2.
+  destruct H2 as [m HR].
+  apply valid_cycle2_fill_missing_length; trivial.
+  - unfold chosen_cycles2, test2' in H.
+    rewrite (in_select _ _ []) in H.
+    destruct H as [k [H [E _]]].
+    rewrite nth_skipn, skipn_assemble in H, E.
+    destruct (skipn k Ps) as [|Q Qs] eqn:E2; auto with *.
+    simpl in H, E.
+    autorewrite with bool_to_Prop in H.
+    rewrite HPs in H by (apply (skipn_incl _ k); rewrite E2; auto with *).
+    rewrite HR, valid_cycle2_rotate, <- E.
+    tauto.
+  - rewrite HR, rotate_length.
+    apply (chosen_cycles2_length n C' Ps); trivial.
+Qed.
+
+Lemma score2'_final :
+  forall (n : nat) (L : list nat),
+    n >= 2 -> all_perms n L -> score test2' (n_strings n L) >= fact (n - 2).
+Proof.
+  intros n L Hn HL.
+  set (Ps := n_strings n L).
+  assert (forall P, In P Ps -> length P = n) as HPs by apply in_n_strings.
+  apply (mult_S_le_reg_l (n - 2)), (mult_S_le_reg_l (S (n - 2))).
+  change (fact (S (S (n - 2))) <= S (S (n - 2)) * (S (n - 2) * score test2' Ps)).
+  replace (S (n - 2)) with (n - 1) by omega.
+  replace (S (n - 1)) with n by omega.
+  rewrite <- permutations_seq_length.
+  unfold score, chosen.
+  rewrite (select_length_equal _ _ _ (assemble cycle2 Ps)) by (symmetry; apply assemble_length).
+  fold (chosen_cycles2 Ps).
+  rewrite <- (flat_map_length _ _ rotations) by (
+    intros C H; rewrite rotations_length, (chosen_cycles2_length n C Ps); auto with *
+  ).
+  rewrite <- (map_length fill_missing (flat_map rotations (chosen_cycles2 Ps))).
+  rewrite <- (flat_map_length _ _ rotations) by (
+    intros C H; rewrite rotations_length, (mapped_cycles2_length n C Ps); auto with *
+  ).
+  apply NoDup_incl_lel; [apply NoDup_permutations, NoDup_seq|].
+  unfold incl.
+  intro P.
+  rewrite in_permutations.
+  apply chosen_cycles2_complete.
+  - omega.
+  - apply n_strings_legal.
+    omega.
+  - apply n_strings_all_perms, HL.
+Qed.
+
 Lemma test2_is_perm_false :
   forall (P : list nat) (Qs : list (list nat)),
     test2 P Qs = true -> is_perm P = false.

@@ -45,6 +45,26 @@ Proof.
   rewrite removelast_app; simpl; auto with *.
 Qed.
 
+Lemma removelast_length :
+  forall (A : Type) (L : list A), length (removelast L) = length L - 1.
+Proof.
+  intros A L.
+  induction L as [|x [|y L] IH]; trivial.
+  change (S (length (removelast (y :: L))) = S (length (y :: L)) - 1).
+  rewrite IH.
+  simpl.
+  omega.
+Qed.
+
+Lemma tail_length :
+  forall (A : Type) (L : list A), length (tail L) = length L - 1.
+Proof.
+  intros A L.
+  induction L as [|x L IH]; trivial.
+  simpl.
+  omega.
+Qed.
+
 Lemma firstn_correct :
   forall (A : Type) (L M : list A), firstn (length L) (L ++ M) = L.
 Proof.
@@ -64,6 +84,21 @@ Proof.
   simpl.
   rewrite IH.
   trivial.
+Qed.
+
+Lemma firstn_incl :
+  forall (A : Type) (k : nat) (L : list A),
+    forall (x : A), In x (firstn k L) -> In x L.
+Proof.
+  intros A k.
+  induction k as [|k IH]; intros [|x L] y H; trivial.
+  - simpl in *.
+    tauto.
+  - simpl in *.
+    destruct H as [H|H]; [tauto|].
+    right.
+    apply IH.
+    trivial.
 Qed.
 
 Lemma skipn_correct :
@@ -89,6 +124,14 @@ Lemma skipn_map :
 Proof.
   intros A B k f.
   induction k as [|k IH]; intros [|x L]; simpl; trivial.
+Qed.
+
+Lemma skipn_incl :
+  forall (A : Type) (k : nat) (L : list A),
+    forall (x : A), In x (skipn k L) -> In x L.
+Proof.
+  intros A k.
+  induction k as [|k IH]; intros [|x L] y H; auto with *.
 Qed.
 
 Lemma nth_skipn :
@@ -477,6 +520,18 @@ Proof.
   destruct x; trivial.
 Qed.
 
+Lemma select_length_equal :
+  forall (A : Type) (L : list bool) (M N : list A),
+    length M = length N -> length (select L M) = length (select L N).
+Proof.
+  intros A L M; revert L.
+  induction M as [|x M IH]; intros [|v L] [|y N]; trivial; simpl; try omega.
+  repeat rewrite select_cons, app_length.
+  intro H.
+  rewrite (IH L N) by auto.
+  destruct v; trivial.
+Qed.
+
 Lemma select_incl :
   forall (A : Type) (L : list bool) (M : list A),
     incl (select L M) M.
@@ -618,6 +673,47 @@ Proof.
   apply Permutation_remove1, IH.
   rewrite <- Permutation_middle.
   trivial.
+Qed.
+
+Lemma list_diff_undisturbed :
+  forall (A : Type) eq_dec (x : A) (L M : list A),
+    In x L -> ~ In x M -> In x (list_diff eq_dec L M).
+Proof.
+  intros A eq_dec x L M HL HM.
+  induction M as [|y M IH]; trivial.
+  simpl.
+  unfold remove1.
+  destruct (search_first eq_dec y (list_diff eq_dec L M)) as [[N1 [N2 [E H]]]|H].
+  - assert (~ In x M) as HM2 by auto with *.
+    specialize (IH HM2).
+    rewrite E, in_app_iff in IH.
+    destruct IH as [IH|[IH|IH]]; auto with *.
+    subst y.
+    contradict HM.
+    auto with *.
+  - auto with *.
+Qed.
+
+Lemma list_diff_NoDup_length :
+  forall (A : Type) eq_dec (L M : list A),
+    NoDup M -> incl M L -> length (list_diff eq_dec L M) = length L - length M.
+Proof.
+  intros A eq_dec L M HN HI.
+  induction M as [|x M IH]; auto with *.
+  simpl.
+  unfold remove1.
+  destruct (search_first eq_dec x (list_diff eq_dec L M)) as [[N1 [N2 [E H]]]|H].
+  - assert (NoDup M) as HN2 by (inversion HN; trivial).
+    assert (incl M L) as HI2 by (unfold incl; auto with *).
+    specialize (IH HN2 HI2).
+    rewrite E, app_length in IH.
+    simpl in IH.
+    rewrite app_length.
+    omega.
+  - contradict H.
+    apply list_diff_undisturbed; auto with *.
+    inversion HN.
+    trivial.
 Qed.
 
 Definition empty_dec {A : Type} (L : list A) :
