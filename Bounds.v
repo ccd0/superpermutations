@@ -644,6 +644,22 @@ Proof.
     tauto.
 Qed.
 
+Lemma score01_final :
+  forall (n : nat) (L : list nat),
+    n >= 1 ->
+    all_perms n L ->
+      score (ort test0 test1) (n_strings n L) >= fact n + (fact (n - 1) - 1).
+Proof.
+  intros n L H Hn.
+  rewrite (plus_n_O (score _ _)).
+  rewrite <- (score_andt_tests01 n L) by trivial.
+  rewrite score_plus.
+  rewrite (score_andt_tests01 n L) by trivial.
+  apply plus_le_compat.
+  - rewrite score0_final; trivial.
+  - apply score1_final; trivial.
+Qed.
+
 Lemma cycle2_is_perm_false :
   forall (P : list nat) (Ps : list (list nat)), is_perm P = false -> cycle2 P Ps = removelast P.
 Proof.
@@ -1268,6 +1284,23 @@ Proof.
     rewrite Hn'; auto with *.
 Qed.
 
+Lemma score012_final :
+  forall (n : nat) (L : list nat),
+    n >= 2 ->
+    all_perms n L ->
+      score (ort (ort test0 test1) test2) (n_strings n L)
+        >= fact n + (fact (n - 1) - 1) + (fact (n - 2) - 1).
+Proof.
+  intros n L H Hn.
+  rewrite (plus_n_O (score _ _)).
+  rewrite <- (score_andt_tests012 n L) by trivial.
+  rewrite score_plus.
+  rewrite (score_andt_tests012 n L) by trivial.
+  apply plus_le_compat; [|apply score2_final; trivial].
+  apply score01_final; trivial.
+  omega.
+Qed.
+
 Theorem bound0 :
   forall (n : nat) (L : list nat),
     all_perms n L -> length L >= n.
@@ -1299,11 +1332,16 @@ Proof.
   intros n L H Hn.
   assert (fact n + (fact (n - 1) - 1) <= length L + 1 - n); [|pose (bound0 n L H); omega].
   apply (le_trans _ (score (ort test0 test1) (n_strings n L))); [|apply score_bound].
-  rewrite (plus_n_O (score _ _)).
-  rewrite <- (score_andt_tests01 n L) by trivial.
-  rewrite score_plus.
-  rewrite (score_andt_tests01 n L) by trivial.
-  apply plus_le_compat.
-  - rewrite score0_final; trivial.
-  - apply score1_final; trivial.
+  apply score01_final; trivial.
+Qed.
+
+Theorem bound3 :
+  forall (n : nat) (L : list nat),
+    all_perms n L -> n >= 2 -> length L >= fact n + fact (n - 1) + fact (n - 2) + n - 3.
+Proof.
+  intros n L H Hn.
+  assert (fact n + (fact (n - 1) - 1) + (fact (n - 2) - 1) <= length L + 1 - n);
+    [|pose (bound0 n L H); omega].
+  apply (le_trans _ (score (ort (ort test0 test1) test2) (n_strings n L))); [|apply score_bound].
+  apply score012_final; trivial.
 Qed.
