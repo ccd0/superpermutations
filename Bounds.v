@@ -1027,6 +1027,31 @@ Proof.
   - apply n_strings_all_perms, HL.
 Qed.
 
+Lemma score2_score2' :
+  forall (Ps : list (list nat)),
+    score test2 Ps >= score test2' Ps - 1.
+Proof.
+  intro Ps.
+  unfold test2.
+  induction Ps as [|P Ps IH]; auto.
+  repeat rewrite score_cons.
+  destruct (test2' P Ps); trivial.
+  destruct (empty_dec Ps) as [H|H]; simpl.
+  - subst Ps.
+    trivial.
+  - omega.
+Qed.
+
+Lemma score2_final :
+  forall (n : nat) (L : list nat),
+    n >= 2 -> all_perms n L -> score test2 (n_strings n L) >= fact (n - 2) - 1.
+Proof.
+  intros n L Hn HL.
+  apply (le_trans _ (score test2' (n_strings n L) - 1)).
+  - apply minus_le_compat_r, score2'_final; trivial.
+  - apply score2_score2'.
+Qed.
+
 Lemma test2_is_perm_false :
   forall (P : list nat) (Qs : list (list nat)),
     test2 P Qs = true -> is_perm P = false.
