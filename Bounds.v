@@ -114,6 +114,9 @@ Definition test2' (P : list nat) (Ps : list (list nat)) : bool :=
 Definition test2 (P : list nat) (Ps : list (list nat)) : bool :=
   test2' P Ps && negb (to_bool (empty_dec Ps)).
 
+Definition chosen_cycles2 (Ps : list (list nat)) : list (list nat) :=
+  select (assemble test2' Ps) (assemble cycle2 Ps).
+
 Lemma to_bool_iff :
   forall (P : Prop) (x : {P} + {~ P}), to_bool x = true <-> P.
 Proof.
@@ -764,15 +767,13 @@ Proof.
   tauto.
 Qed.
 
-Lemma select2'_complete1 :
+Lemma chosen_cycles2_complete1 :
   forall (n : nat) (P : list nat) (Qs : list (list nat)),
     Permutation (seq 0 n) P ->
     P <> [] ->
     legal (P :: Qs) -> 
     In (cycle2 P Qs) (flat_map rotations (assemble cycle2 Qs)) ->
-    In P (flat_map rotations (map fill_missing (flat_map rotations
-      (select (assemble test2' Qs) (assemble cycle2 Qs))
-    ))).
+    In P (flat_map rotations (map fill_missing (flat_map rotations (chosen_cycles2 Qs)))).
 Proof.
   intros n P Qs H1 H2 H3 H4.
   destruct (cycle2_correct _ _ H2 H3) as [x [j [k E]]].
@@ -814,7 +815,8 @@ Proof.
   rewrite to_bool_iff, in_rotations in H10.
   destruct H10 as [i H10].
   split.
-  - rewrite (in_select _ _ []).
+  - unfold chosen_cycles2.
+    rewrite (in_select _ _ []).
     exists (length Bs1).
     repeat rewrite nth_skipn, skipn_assemble.
     fold Rs.
@@ -856,19 +858,18 @@ Proof.
     trivial.
 Qed.
 
-Lemma select2'_complete :
+Lemma chosen_cycles2_complete :
   forall (n : nat) (Ps : list (list nat)),
     n >= 1 ->
     legal Ps ->
     all_perms' n Ps ->
     all_perms' n (
-      flat_map rotations (map fill_missing (flat_map rotations (
-        select (assemble test2' Ps) (assemble cycle2 Ps)
-      )))
+      flat_map rotations (map fill_missing (flat_map rotations (chosen_cycles2 Ps)))
     ).
 Proof.
   intros n Ps Hn HL HA P HP.
   specialize (HA P HP).
+  unfold chosen_cycles2.
   induction Ps as [|Q Qs IH]; trivial.
   destruct HA as [HA|HA].
   - subst Q.
@@ -885,6 +886,7 @@ Proof.
           rewrite <- (Permutation_rotate _ j (x :: rotate k (cycle2 P Qs))), <- E; trivial
         ).
         split; trivial.
+        unfold chosen_cycles2.
         simpl.
         rewrite in_app_iff, in_rotations.
         left.
@@ -901,7 +903,7 @@ Proof.
         rewrite <- (Permutation_seq_length n P) by trivial.
         apply (valid_cycle2_Permutation n j k x P); trivial.
       * rewrite select_cons.
-        apply (select2'_complete1 n); trivial.
+        apply (chosen_cycles2_complete1 n); trivial.
   - simpl.
     rewrite select_cons, flat_map_app, map_app, flat_map_app, in_app_iff.
     right.
