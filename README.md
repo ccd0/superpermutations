@@ -3,4 +3,6 @@ Main results proven so far are in Bounds.v.
 
 Last working in Coq 8.4. May require changes to work in newer versions.
 
-ListTheorems.v and NumPermutations.v must be compiled for the results in Bounds.v to go through: `coqc ListTheorems.v NumPermutations.v`
+ListTheorems.v and NumPermutations.v must be compiled for the results in Bounds.v to go through:
+
+    coqc ListTheorems.v NumPermutations.v
