@@ -5,4 +5,5 @@ Last working in Coq 8.6. May require changes to work in newer versions.
 
 ListTheorems.v and NumPermutations.v must be compiled for the results in Bounds.v to go through:
 
-    coqc -I . ListTheorems.v NumPermutations.v
+    coqc ListTheorems.v
+    coqc NumPermutations.v
