@@ -826,7 +826,7 @@ Proof.
   set (Rs := skipn (length Bs1) Qs) in *.
   destruct Rs as [|R Ss] eqn:ER; simpl in H7; [discriminate|].
   exists (cycle2 R Ss).
-  injection H7 as H9 H10.
+  injection H7 as H10 H9.
   rewrite <- H9, in_map_iff in H8.
   rewrite to_bool_iff, in_rotations in H10.
   destruct H10 as [i H10].

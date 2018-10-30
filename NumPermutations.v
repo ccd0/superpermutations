@@ -111,7 +111,7 @@ Proof.
   intros A k L.
   destruct L as [|x M]; [symmetry; apply rotate_nil|].
   set (r := k mod (length (x :: M))).
-  rewrite (div_mod k (length (x :: M))) by (simpl; auto).
+  rewrite (Nat.div_mod k (length (x :: M))) by (simpl; auto).
   rewrite rotate_plus, mult_comm, rotate_mult.
   trivial.
 Qed.
@@ -138,9 +138,9 @@ Proof.
     set (q := (k + m) / (S m)).
     change (rotate (m - r) (rotate k (x :: M)) = x :: M).
     rewrite <- rotate_plus.
-    assert (r < S m) as B by (apply mod_bound_pos; omega).
+    assert (r < S m) as B by (apply Nat.mod_bound_pos; omega).
     replace (k + (m - r)) with ((k + m) - r) by omega.
-    rewrite (div_mod (k + m) (S m)) by auto.
+    rewrite (Nat.div_mod (k + m) (S m)) by auto.
     rewrite Nat.add_sub, mult_comm.
     change (rotate (q * length (x :: M)) (x :: M) = x :: M).
     apply rotate_mult.
@@ -259,7 +259,7 @@ Proof.
       split.
       * apply rotate_mod.
       * apply nonempty_length in N.
-        apply in_seq, mod_bound_pos; omega.
+        apply in_seq, Nat.mod_bound_pos; omega.
 Qed.
 
 Lemma rotate1_empty :

@@ -1,6 +1,7 @@
 Require Import Omega.
 Require Import List.
 Require Import Permutation.
+Require Import NPeano.
 Import ListNotations.
 
 Definition injective {A B : Type} (L : list A) (f : A -> B) : Prop :=
@@ -636,7 +637,7 @@ Defined.
 
 Definition remove1 {A : Type} eq_dec (x : A) (L : list A) : list A :=
   match search_first eq_dec x L with
-  | inleft (existT M (exist N _)) => M ++ N
+  | inleft (existT _ M (exist _ N _)) => M ++ N
   | inright _ => L
   end.
 
